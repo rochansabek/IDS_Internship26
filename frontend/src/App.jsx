@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import CreateTicket from "./pages/CreateTicket";
+import EditTicket from "./pages/EditTicket";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -19,6 +22,24 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/tickets/create"
+          element={
+            <ProtectedRoute>
+              <CreateTicket />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/tickets/edit/:id"
+          element={
+            <ProtectedRoute>
+              <EditTicket />
             </ProtectedRoute>
           }
         />
