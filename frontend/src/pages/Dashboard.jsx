@@ -87,6 +87,10 @@ function Dashboard() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [ticketToDelete, setTicketToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     loadTickets();
   }, []);
@@ -102,21 +106,35 @@ function Dashboard() {
     }
   }
 
-  async function handleDelete(id) {
-    const confirmDelete = window.confirm("Are you sure you want to delete this ticket?");
+  function openDeleteModal(ticket) {
+    setTicketToDelete(ticket);
+    setShowDeleteModal(true);
+  }
 
-    if (!confirmDelete) {
+  function closeDeleteModal() {
+    setTicketToDelete(null);
+    setShowDeleteModal(false);
+  }
+
+  async function confirmDelete() {
+    if (!ticketToDelete) {
       return;
     }
 
     try {
-      await deleteTicket(id);
+      setIsDeleting(true);
+
+      await deleteTicket(ticketToDelete.id);
 
       setTickets(
-        tickets.filter((ticket) => ticket.id !== id)
+        tickets.filter((ticket) => ticket.id !== ticketToDelete.id)
       );
+
+      closeDeleteModal();
     } catch (error) {
       alert("Could not delete ticket.");
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -216,7 +234,7 @@ function Dashboard() {
               </Link>
 
               <Link
-                to="/"
+                to="/dashboard"
                 className="px-4 py-2 border border-border rounded-lg"
               >
                 My Tickets
@@ -227,14 +245,14 @@ function Dashboard() {
           {role === "Agent" && (
             <>
               <Link
-                to="/"
+                to="/dashboard"
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
               >
                 Assigned Tickets
               </Link>
 
               <Link
-                to="/"
+                to="/dashboard"
                 className="px-4 py-2 border border-border rounded-lg"
               >
                 Update Ticket Status
@@ -394,7 +412,7 @@ function Dashboard() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">Recent Tickets</h2>
 
-          <Link to="/" className="text-sm text-primary hover:underline">
+          <Link to="/dashboard" className="text-sm text-primary hover:underline">
             View All
           </Link>
         </div>
@@ -487,7 +505,7 @@ function Dashboard() {
                         </Link>
 
                         <button
-                          onClick={() => handleDelete(ticket.id)}
+                          onClick={() => openDeleteModal(ticket)}
                           className="flex items-center gap-1 px-3 py-1 border border-destructive text-destructive rounded-lg hover:bg-destructive hover:text-destructive-foreground transition-colors text-sm"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -502,6 +520,42 @@ function Dashboard() {
           </div>
         )}
       </div>
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-xl font-semibold mb-2">Delete Ticket</h3>
+
+            <p className="text-muted-foreground mb-6">
+              Are you sure you want to delete{" "}
+              <span className="font-medium text-foreground">
+                {ticketToDelete?.title}
+              </span>
+              ? This action cannot be undone.
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeDeleteModal}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-accent text-foreground rounded-lg font-medium hover:bg-accent/80 transition-colors disabled:opacity-60"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
