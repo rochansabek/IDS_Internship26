@@ -5,8 +5,10 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import CreateTicket from "./pages/CreateTicket";
 import EditTicket from "./pages/EditTicket";
+import TicketDetail from "./pages/TicketDetail";
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import AppLayout from "./components/AppLayout";
 
 function App() {
   return (
@@ -21,7 +23,9 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <AppLayout>
+                <Dashboard />
+              </AppLayout>
             </ProtectedRoute>
           }
         />
@@ -30,7 +34,20 @@ function App() {
           path="/tickets/create"
           element={
             <ProtectedRoute>
-              <CreateTicket />
+              <AppLayout>
+                <CreateTicket />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/tickets/:id"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <TicketDetail />
+              </AppLayout>
             </ProtectedRoute>
           }
         />
@@ -39,7 +56,9 @@ function App() {
           path="/tickets/edit/:id"
           element={
             <ProtectedRoute>
-              <EditTicket />
+              <AppLayout>
+                <EditTicket />
+              </AppLayout>
             </ProtectedRoute>
           }
         />
