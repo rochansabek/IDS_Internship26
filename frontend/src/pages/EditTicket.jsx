@@ -15,6 +15,8 @@ export default function EditTicket() {
     status: "Open",
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     async function loadTicket() {
       const response = await getTicket(id);
@@ -34,17 +36,24 @@ export default function EditTicket() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    await updateTicket(id, formData);
+    try {
+      setIsSubmitting(true);
 
-    alert("Ticket updated successfully!");
-    navigate("/tickets");
+      await updateTicket(id, formData);
+
+      navigate("/dashboard");
+    } catch (error) {
+      alert("Could not update ticket. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
         <Link
-          to="/tickets"
+          to="/dashboard"
           className="p-2 hover:bg-accent rounded-lg transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -161,13 +170,14 @@ export default function EditTicket() {
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              className="flex-1 md:flex-none px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
+              disabled={isSubmitting}
+              className="flex-1 md:flex-none px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
             >
-              Update Ticket
+              {isSubmitting ? "Updating..." : "Update Ticket"}
             </button>
 
             <Link
-              to="/tickets"
+              to="/dashboard"
               className="flex-1 md:flex-none px-6 py-3 bg-accent text-foreground rounded-lg font-medium hover:bg-accent/80 transition-colors text-center"
             >
               Cancel

@@ -15,15 +15,22 @@ export default function CreateTicket() {
 
   const [files, setFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
 
-    await createTicket(formData);
+    try {
+      setIsSubmitting(true);
 
-    alert("Ticket created successfully!");
+      await createTicket(formData);
 
-    navigate("/tickets");
+      navigate("/dashboard");
+    } catch (error) {
+      alert("Could not create ticket. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function handleFileChange(e) {
@@ -58,7 +65,7 @@ export default function CreateTicket() {
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
         <Link
-          to="/tickets"
+          to="/dashboard"
           className="p-2 hover:bg-accent rounded-lg transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -238,13 +245,14 @@ export default function CreateTicket() {
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              className="flex-1 md:flex-none px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
+              disabled={isSubmitting}
+              className="flex-1 md:flex-none px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
             >
-              Submit Ticket
+              {isSubmitting ? "Submitting..." : "Submit Ticket"}
             </button>
 
             <Link
-              to="/tickets"
+              to="/dashboard"
               className="flex-1 md:flex-none px-6 py-3 bg-accent text-foreground rounded-lg font-medium hover:bg-accent/80 transition-colors text-center"
             >
               Cancel
