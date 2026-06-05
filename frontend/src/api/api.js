@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "http://localhost:5046/api",
 });
 
 api.interceptors.request.use((config) => {
@@ -16,7 +16,8 @@ api.interceptors.request.use((config) => {
 
 // Ticket APIs
 
-export const getTickets = () => api.get("/tickets");
+export const getTickets = () =>
+  api.get("/tickets");
 
 export const getTicket = (id) =>
   api.get(`/tickets/${id}`);
@@ -26,3 +27,6 @@ export const createTicket = (ticket) =>
 
 export const updateTicket = (id, ticket) =>
   api.put(`/tickets/${id}`, ticket);
+
+export const deleteTicket = (id) =>
+  api.delete(`/tickets/${id}`);
