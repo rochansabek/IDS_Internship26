@@ -19,10 +19,9 @@ import {
   TrendingUp,
   Plus,
   LogOut,
-  Users,
-  Settings,
   Trash2,
   Pencil,
+  Eye,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { getTickets, deleteTicket } from "../api/api";
@@ -45,38 +44,17 @@ const priorityData = [
 ];
 
 function getPriorityColor(priority) {
-  if (priority === "Critical") {
-    return "bg-destructive text-destructive-foreground";
-  }
-
-  if (priority === "High") {
-    return "bg-chart-4 text-white";
-  }
-
-  if (priority === "Medium") {
-    return "bg-chart-1 text-white";
-  }
-
-  if (priority === "Low") {
-    return "bg-chart-2 text-white";
-  }
-
+  if (priority === "Critical") return "bg-destructive text-destructive-foreground";
+  if (priority === "High") return "bg-chart-4 text-white";
+  if (priority === "Medium") return "bg-chart-1 text-white";
+  if (priority === "Low") return "bg-chart-2 text-white";
   return "bg-muted text-muted-foreground";
 }
 
 function getStatusColor(status) {
-  if (status === "Open") {
-    return "bg-chart-1/10 text-chart-1 border-chart-1/20";
-  }
-
-  if (status === "In Progress") {
-    return "bg-chart-4/10 text-chart-4 border-chart-4/20";
-  }
-
-  if (status === "Resolved") {
-    return "bg-chart-2/10 text-chart-2 border-chart-2/20";
-  }
-
+  if (status === "Open") return "bg-chart-1/10 text-chart-1 border-chart-1/20";
+  if (status === "In Progress") return "bg-chart-4/10 text-chart-4 border-chart-4/20";
+  if (status === "Resolved") return "bg-chart-2/10 text-chart-2 border-chart-2/20";
   return "bg-muted text-muted-foreground border-border";
 }
 
@@ -117,19 +95,12 @@ function Dashboard() {
   }
 
   async function confirmDelete() {
-    if (!ticketToDelete) {
-      return;
-    }
+    if (!ticketToDelete) return;
 
     try {
       setIsDeleting(true);
-
       await deleteTicket(ticketToDelete.id);
-
-      setTickets(
-        tickets.filter((ticket) => ticket.id !== ticketToDelete.id)
-      );
-
+      setTickets(tickets.filter((ticket) => ticket.id !== ticketToDelete.id));
       closeDeleteModal();
     } catch (error) {
       alert("Could not delete ticket.");
@@ -146,8 +117,12 @@ function Dashboard() {
 
   const openCount = tickets.filter((ticket) => ticket.status === "Open").length;
   const resolvedCount = tickets.filter((ticket) => ticket.status === "Resolved").length;
-  const pendingCount = tickets.filter((ticket) => ticket.status === "Pending" || ticket.status === "In Progress").length;
+  const pendingCount = tickets.filter(
+    (ticket) => ticket.status === "Pending" || ticket.status === "In Progress"
+  ).length;
   const criticalCount = tickets.filter((ticket) => ticket.priority === "Critical").length;
+
+  const recentTickets = tickets.slice(-5).reverse();
 
   const stats = [
     {
@@ -220,68 +195,6 @@ function Dashboard() {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-xl p-6">
-        <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-
-        <div className="flex flex-wrap gap-3">
-          {role === "Employee" && (
-            <>
-              <Link
-                to="/tickets/create"
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
-              >
-                Create Ticket
-              </Link>
-
-              <Link
-                to="/dashboard"
-                className="px-4 py-2 border border-border rounded-lg"
-              >
-                My Tickets
-              </Link>
-            </>
-          )}
-
-          {role === "Agent" && (
-            <>
-              <Link
-                to="/dashboard"
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
-              >
-                Assigned Tickets
-              </Link>
-
-              <Link
-                to="/dashboard"
-                className="px-4 py-2 border border-border rounded-lg"
-              >
-                Update Ticket Status
-              </Link>
-            </>
-          )}
-
-          {role === "Admin" && (
-            <>
-              <Link
-                to="/users"
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg"
-              >
-                <Users className="w-5 h-5" />
-                Manage Users
-              </Link>
-
-              <Link
-                to="/settings"
-                className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg"
-              >
-                <Settings className="w-5 h-5" />
-                Manage Settings
-              </Link>
-            </>
-          )}
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => {
           const Icon = stat.icon;
@@ -313,9 +226,7 @@ function Dashboard() {
 
               <div>
                 <div className="text-3xl font-semibold mb-1">{stat.value}</div>
-                <div className="text-sm text-muted-foreground">
-                  {stat.label}
-                </div>
+                <div className="text-sm text-muted-foreground">{stat.label}</div>
               </div>
             </div>
           );
@@ -359,9 +270,7 @@ function Dashboard() {
         </div>
 
         <div className="bg-card border border-border rounded-xl p-6">
-          <h2 className="text-xl font-semibold mb-6">
-            Priority Distribution
-          </h2>
+          <h2 className="text-xl font-semibold mb-6">Priority Distribution</h2>
 
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
@@ -396,12 +305,8 @@ function Dashboard() {
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: item.color }}
                 />
-                <span className="text-sm text-muted-foreground">
-                  {item.name}
-                </span>
-                <span className="text-sm font-medium ml-auto">
-                  {item.value}
-                </span>
+                <span className="text-sm text-muted-foreground">{item.name}</span>
+                <span className="text-sm font-medium ml-auto">{item.value}</span>
               </div>
             ))}
           </div>
@@ -412,9 +317,9 @@ function Dashboard() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">Recent Tickets</h2>
 
-          <Link to="/dashboard" className="text-sm text-primary hover:underline">
-            View All
-          </Link>
+          <span className="text-sm text-muted-foreground">
+            Showing latest 5 tickets
+          </span>
         </div>
 
         {loading ? (
@@ -451,18 +356,28 @@ function Dashboard() {
               </thead>
 
               <tbody>
-                {tickets.map((ticket) => (
+                {recentTickets.map((ticket) => (
                   <tr
                     key={ticket.id}
                     className="border-b border-border hover:bg-accent/50 transition-colors"
                   >
                     <td className="py-4 px-4">
-                      <span className="text-primary font-medium">
+                      <Link
+                        to={"/tickets/" + ticket.id}
+                        className="text-primary font-medium hover:underline"
+                      >
                         TKT-{ticket.id}
-                      </span>
+                      </Link>
                     </td>
 
-                    <td className="py-4 px-4">{ticket.title}</td>
+                    <td className="py-4 px-4">
+                      <Link
+                        to={"/tickets/" + ticket.id}
+                        className="hover:text-primary hover:underline"
+                      >
+                        {ticket.title}
+                      </Link>
+                    </td>
 
                     <td className="py-4 px-4 text-muted-foreground">
                       {ticket.category}
@@ -496,6 +411,14 @@ function Dashboard() {
 
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-2">
+                        <Link
+                          to={"/tickets/" + ticket.id}
+                          className="flex items-center gap-1 px-3 py-1 border border-border rounded-lg hover:bg-accent transition-colors text-sm"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View
+                        </Link>
+
                         <Link
                           to={"/tickets/edit/" + ticket.id}
                           className="flex items-center gap-1 px-3 py-1 border border-border rounded-lg hover:bg-accent transition-colors text-sm"
