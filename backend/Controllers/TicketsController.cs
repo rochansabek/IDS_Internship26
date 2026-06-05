@@ -70,4 +70,20 @@ public class TicketsController : ControllerBase
 
         return NoContent();
     }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteTicket(int id)
+    {
+        Ticket? ticket = await _context.Tickets.FindAsync(id);
+
+        if (ticket == null)
+        {
+            return NotFound();
+        }
+
+        _context.Tickets.Remove(ticket);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
 }
