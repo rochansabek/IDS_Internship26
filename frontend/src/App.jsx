@@ -5,7 +5,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import CreateTicket from "./pages/CreateTicket";
 import EditTicket from "./pages/EditTicket";
-import TicketDetail from "./pages/TicketDetail";
+import Profile from "./pages/Profile";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./components/AppLayout";
@@ -31,22 +31,22 @@ function App() {
         />
 
         <Route
-          path="/tickets/create"
+          path="/profile"
           element={
             <ProtectedRoute>
               <AppLayout>
-                <CreateTicket />
+                <Profile />
               </AppLayout>
             </ProtectedRoute>
           }
         />
 
         <Route
-          path="/tickets/:id"
+          path="/tickets/create"
           element={
             <ProtectedRoute>
               <AppLayout>
-                <TicketDetail />
+                <CreateTicket />
               </AppLayout>
             </ProtectedRoute>
           }
@@ -62,6 +62,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>
     </BrowserRouter>
   );
