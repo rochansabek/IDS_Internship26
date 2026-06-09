@@ -191,6 +191,14 @@ export default function TicketDetail() {
     );
   }
 
+  const visibleComments = comments.filter((comment) => {
+    if (role === "Employee" && comment.isInternalNote) {
+      return false;
+    }
+
+    return true;
+  });
+
   const timeline = [
     ...activities.map((activity) => ({
       id: "activity-" + activity.id,
@@ -203,7 +211,7 @@ export default function TicketDetail() {
           : "",
       time: formatDate(activity.createdAt),
     })),
-    ...comments.map((comment) => ({
+    ...visibleComments.map((comment) => ({
       id: "comment-" + comment.id,
       type: "comment",
       user: "User " + comment.userId,
@@ -215,6 +223,8 @@ export default function TicketDetail() {
   ];
 
   timeline.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+  const currentStatusIndex = statuses.indexOf(ticket.status);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -341,14 +351,18 @@ export default function TicketDetail() {
                   />
 
                   <div className="flex items-center justify-between mt-2">
-                    <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <input
-                        type="checkbox"
-                        checked={isInternalNote}
-                        onChange={(e) => setIsInternalNote(e.target.checked)}
-                      />
-                      Internal note
-                    </label>
+                    {role !== "Employee" && (
+                      <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          checked={isInternalNote}
+                          onChange={(e) => setIsInternalNote(e.target.checked)}
+                        />
+                        Internal note
+                      </label>
+                    )}
+
+                    {role === "Employee" && <div />}
 
                     <button
                       onClick={handleAddComment}
@@ -418,6 +432,62 @@ export default function TicketDetail() {
                 </button>
               </div>
             )}
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-6">
+            <h3 className="font-semibold mb-4">Status Timeline</h3>
+
+            <div className="space-y-4">
+              {statuses.map((status, index) => {
+                const isCompleted = index < currentStatusIndex;
+                const isCurrent = index === currentStatusIndex;
+
+                return (
+                  <div key={status} className="flex items-start gap-3">
+                    <div className="flex flex-col items-center">
+                      <div
+                        className={
+                          "w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium border " +
+                          (isCompleted || isCurrent
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted text-muted-foreground border-border")
+                        }
+                      >
+                        {isCompleted ? "✓" : index + 1}
+                      </div>
+
+                      {index < statuses.length - 1 && (
+                        <div
+                          className={
+                            "w-px h-6 mt-1 " +
+                            (isCompleted ? "bg-primary" : "bg-border")
+                          }
+                        />
+                      )}
+                    </div>
+
+                    <div>
+                      <div
+                        className={
+                          "font-medium " +
+                          (isCurrent ? "text-primary" : "text-foreground")
+                        }
+                      >
+                        {status}
+                      </div>
+
+                      <div className="text-xs text-muted-foreground">
+                        {isCurrent
+                          ? "Current status"
+                          : isCompleted
+                          ? "Completed"
+                          : "Pending"}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           <div className="bg-card border border-border rounded-xl p-6 space-y-4">
