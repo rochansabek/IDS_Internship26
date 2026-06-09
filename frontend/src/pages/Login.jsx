@@ -24,7 +24,7 @@ function Login() {
       });
 
       localStorage.setItem("ids_token", response.data.token);
-      localStorage.setItem("ids_role", response.data.role);
+      localStorage.setItem("ids_role", response.data.role || "Employee");
 
       navigate("/dashboard");
     } catch (err) {
@@ -77,7 +77,11 @@ function Login() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
             </div>

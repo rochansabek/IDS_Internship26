@@ -53,8 +53,10 @@ function getPriorityColor(priority) {
 
 function getStatusColor(status) {
   if (status === "Open") return "bg-chart-1/10 text-chart-1 border-chart-1/20";
+  if (status === "Assigned") return "bg-primary/10 text-primary border-primary/20";
   if (status === "In Progress") return "bg-chart-4/10 text-chart-4 border-chart-4/20";
   if (status === "Resolved") return "bg-chart-2/10 text-chart-2 border-chart-2/20";
+  if (status === "Closed") return "bg-muted text-muted-foreground border-border";
   return "bg-muted text-muted-foreground border-border";
 }
 
@@ -116,11 +118,21 @@ function Dashboard() {
   }
 
   const openCount = tickets.filter((ticket) => ticket.status === "Open").length;
-  const resolvedCount = tickets.filter((ticket) => ticket.status === "Resolved").length;
-  const pendingCount = tickets.filter(
-    (ticket) => ticket.status === "Pending" || ticket.status === "In Progress"
+
+  const completedCount = tickets.filter(
+    (ticket) => ticket.status === "Resolved" || ticket.status === "Closed"
   ).length;
-  const criticalCount = tickets.filter((ticket) => ticket.priority === "Critical").length;
+
+  const pendingCount = tickets.filter(
+    (ticket) =>
+      ticket.status === "Pending" ||
+      ticket.status === "Assigned" ||
+      ticket.status === "In Progress"
+  ).length;
+
+  const criticalCount = tickets.filter(
+    (ticket) => ticket.priority === "Critical"
+  ).length;
 
   const recentTickets = tickets.slice(-5).reverse();
 
@@ -135,8 +147,8 @@ function Dashboard() {
       bgColor: "bg-chart-1/10",
     },
     {
-      label: "Resolved Tickets",
-      value: resolvedCount,
+      label: "Completed Tickets",
+      value: completedCount,
       change: "+8%",
       trend: "up",
       icon: CheckCircle,
@@ -419,21 +431,25 @@ function Dashboard() {
                           View
                         </Link>
 
-                        <Link
-                          to={"/tickets/edit/" + ticket.id}
-                          className="flex items-center gap-1 px-3 py-1 border border-border rounded-lg hover:bg-accent transition-colors text-sm"
-                        >
-                          <Pencil className="w-4 h-4" />
-                          Edit
-                        </Link>
+                        {role === "Employee" && (
+                          <Link
+                            to={"/tickets/edit/" + ticket.id}
+                            className="flex items-center gap-1 px-3 py-1 border border-border rounded-lg hover:bg-accent transition-colors text-sm"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            Edit
+                          </Link>
+                        )}
 
-                        <button
-                          onClick={() => openDeleteModal(ticket)}
-                          className="flex items-center gap-1 px-3 py-1 border border-destructive text-destructive rounded-lg hover:bg-destructive hover:text-destructive-foreground transition-colors text-sm"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete
-                        </button>
+                        {(role === "Employee" || role === "Admin") && (
+                          <button
+                            onClick={() => openDeleteModal(ticket)}
+                            className="flex items-center gap-1 px-3 py-1 border border-destructive text-destructive rounded-lg hover:bg-destructive hover:text-destructive-foreground transition-colors text-sm"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
