@@ -1,15 +1,25 @@
-namespace backend.Models;
+using System;
 
-public class Ticket
+namespace backend.Models
 {
-    public int Id { get; set; }
+    public class Ticket
+    {
+        public int Id { get; set; }
 
-    public string Title { get; set; } = "";
-    public string Description { get; set; } = "";
-    public string Status { get; set; } = "Open";
-    public string Priority { get; set; } = "Medium";
-    public string Category { get; set; } = "";
+        public string Title { get; set; } = string.Empty;
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public string Description { get; set; } = string.Empty;
+
+        public string Status { get; set; } = "Open";
+
+        public string Priority { get; set; } = string.Empty;
+
+        public string Category { get; set; } = string.Empty;
+
+        public int? AssignedAgentId { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        public DateTime UpdatedAt { get; set; } = DateTime.Now;
+    }
 }
