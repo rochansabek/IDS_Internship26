@@ -24,54 +24,24 @@ import {
 const statuses = ["Open", "Assigned", "In Progress", "Resolved", "Closed"];
 
 const getPriorityColor = (priority) => {
-  if (priority === "Critical") {
-    return "bg-destructive text-destructive-foreground";
-  }
-
-  if (priority === "High") {
-    return "bg-chart-4 text-white";
-  }
-
-  if (priority === "Medium") {
-    return "bg-chart-1 text-white";
-  }
-
-  if (priority === "Low") {
-    return "bg-chart-2 text-white";
-  }
-
+  if (priority === "Critical") return "bg-destructive text-destructive-foreground";
+  if (priority === "High") return "bg-chart-4 text-white";
+  if (priority === "Medium") return "bg-chart-1 text-white";
+  if (priority === "Low") return "bg-chart-2 text-white";
   return "bg-muted text-muted-foreground";
 };
 
 const getStatusColor = (status) => {
-  if (status === "Open") {
-    return "bg-chart-1/10 text-chart-1 border-chart-1/20";
-  }
-
-  if (status === "Assigned") {
-    return "bg-primary/10 text-primary border-primary/20";
-  }
-
-  if (status === "In Progress") {
-    return "bg-chart-4/10 text-chart-4 border-chart-4/20";
-  }
-
-  if (status === "Resolved") {
-    return "bg-chart-2/10 text-chart-2 border-chart-2/20";
-  }
-
-  if (status === "Closed") {
-    return "bg-muted text-muted-foreground border-border";
-  }
-
+  if (status === "Open") return "bg-chart-1/10 text-chart-1 border-chart-1/20";
+  if (status === "Assigned") return "bg-primary/10 text-primary border-primary/20";
+  if (status === "In Progress") return "bg-chart-4/10 text-chart-4 border-chart-4/20";
+  if (status === "Resolved") return "bg-chart-2/10 text-chart-2 border-chart-2/20";
+  if (status === "Closed") return "bg-muted text-muted-foreground border-border";
   return "bg-muted text-muted-foreground border-border";
 };
 
 function formatDate(value) {
-  if (!value) {
-    return "N/A";
-  }
-
+  if (!value) return "N/A";
   return new Date(value).toLocaleString();
 }
 
@@ -111,9 +81,7 @@ export default function TicketDetail() {
   }, [id]);
 
   const handleStatusChange = async () => {
-    if (!selectedStatus) {
-      return;
-    }
+    if (!selectedStatus) return;
 
     try {
       await updateTicketStatus(id, selectedStatus);
@@ -142,9 +110,7 @@ export default function TicketDetail() {
   };
 
   const handleAssign = async () => {
-    if (!agentId.trim()) {
-      return;
-    }
+    if (!agentId.trim()) return;
 
     try {
       await assignTicket(id, agentId);
@@ -156,9 +122,7 @@ export default function TicketDetail() {
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) {
-      return;
-    }
+    if (!newComment.trim()) return;
 
     try {
       await addTicketComment(id, {
@@ -192,10 +156,7 @@ export default function TicketDetail() {
   }
 
   const visibleComments = comments.filter((comment) => {
-    if (role === "Employee" && comment.isInternalNote) {
-      return false;
-    }
-
+    if (role === "Employee" && comment.isInternalNote) return false;
     return true;
   });
 
@@ -238,9 +199,7 @@ export default function TicketDetail() {
           </Link>
 
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-semibold">{ticket.title}</h1>
-            </div>
+            <h1 className="text-3xl font-semibold mb-2">{ticket.title}</h1>
 
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="font-medium">TKT-{ticket.id}</span>
@@ -289,9 +248,7 @@ export default function TicketDetail() {
 
             <div className="space-y-6">
               {timeline.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  No activity yet.
-                </p>
+                <p className="text-sm text-muted-foreground">No activity yet.</p>
               )}
 
               {timeline.map((item, index) => (
@@ -379,60 +336,62 @@ export default function TicketDetail() {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-card border border-border rounded-xl p-6 space-y-3">
-            <h3 className="font-semibold mb-4">Actions</h3>
+          {role !== "Employee" && (
+            <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+              <h3 className="font-semibold mb-4">Actions</h3>
 
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-4 py-2 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {statuses.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="w-full px-4 py-2 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {statuses.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
 
-            <button
-              onClick={handleStatusChange}
-              className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
-            >
-              Update Status
-            </button>
+              <button
+                onClick={handleStatusChange}
+                className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+              >
+                Update Status
+              </button>
 
-            <button
-              onClick={handleResolve}
-              className="w-full px-4 py-2 bg-chart-2 text-white rounded-lg hover:opacity-90 transition-opacity"
-            >
-              Mark as Resolved
-            </button>
+              <button
+                onClick={handleResolve}
+                className="w-full px-4 py-2 bg-chart-2 text-white rounded-lg hover:opacity-90 transition-opacity"
+              >
+                Mark as Resolved
+              </button>
 
-            <button
-              onClick={handleClose}
-              className="w-full px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity"
-            >
-              Close Ticket
-            </button>
+              <button
+                onClick={handleClose}
+                className="w-full px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity"
+              >
+                Close Ticket
+              </button>
 
-            {(role === "Admin" || role === "SupportAgent") && (
-              <div className="pt-4 border-t border-border space-y-2">
-                <input
-                  value={agentId}
-                  onChange={(e) => setAgentId(e.target.value)}
-                  placeholder="Agent ID"
-                  className="w-full px-4 py-2 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
+              {(role === "Admin" || role === "SupportAgent") && (
+                <div className="pt-4 border-t border-border space-y-2">
+                  <input
+                    value={agentId}
+                    onChange={(e) => setAgentId(e.target.value)}
+                    placeholder="Agent ID"
+                    className="w-full px-4 py-2 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
 
-                <button
-                  onClick={handleAssign}
-                  className="w-full px-4 py-2 bg-accent text-foreground rounded-lg hover:bg-accent/80 transition-colors"
-                >
-                  Assign Ticket
-                </button>
-              </div>
-            )}
-          </div>
+                  <button
+                    onClick={handleAssign}
+                    className="w-full px-4 py-2 bg-accent text-foreground rounded-lg hover:bg-accent/80 transition-colors"
+                  >
+                    Assign Ticket
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="bg-card border border-border rounded-xl p-6">
             <h3 className="font-semibold mb-4">Status Timeline</h3>
