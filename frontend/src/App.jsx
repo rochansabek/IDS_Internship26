@@ -5,6 +5,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import CreateTicket from "./pages/CreateTicket";
 import EditTicket from "./pages/EditTicket";
+import TicketDetail from "./pages/TicketDetail";
 import Profile from "./pages/Profile";
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -58,6 +59,17 @@ function App() {
             <ProtectedRoute>
               <AppLayout>
                 <EditTicket />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/tickets/:id"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <TicketDetail />
               </AppLayout>
             </ProtectedRoute>
           }
