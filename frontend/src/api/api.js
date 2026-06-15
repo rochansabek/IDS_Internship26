@@ -68,3 +68,17 @@ export const getTicketActivities = (ticketId) =>
 
 export const getAgents = () =>
   api.get("/users/agents");
+
+// =====================
+// ATTACHMENTS
+// =====================
+
+export const uploadAttachment = (ticketId, formData) =>
+  api.post(`/Attachments/upload?ticketId=${ticketId}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+export const getAttachments = (ticketId) =>
+  api.get(`/Attachments/ticket/${ticketId}`);

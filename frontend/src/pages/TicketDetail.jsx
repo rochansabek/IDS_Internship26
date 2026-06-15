@@ -11,6 +11,8 @@ import {
   Paperclip,
   Send,
   MoreVertical,
+  Upload,
+  Download,
 } from "lucide-react";
 import {
   getTicket,
@@ -19,6 +21,8 @@ import {
   getTicketComments,
   addTicketComment,
   getTicketActivities,
+  uploadAttachment,
+  getAttachments,
 } from "../api/api";
 
 const statuses = ["Open", "Assigned", "In Progress", "Resolved", "Closed"];
@@ -51,11 +55,16 @@ export default function TicketDetail() {
   const [ticket, setTicket] = useState(null);
   const [comments, setComments] = useState([]);
   const [activities, setActivities] = useState([]);
+  const [attachments, setAttachments] = useState([]);
+
   const [newComment, setNewComment] = useState("");
   const [isInternalNote, setIsInternalNote] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("");
   const [agentId, setAgentId] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   const role = localStorage.getItem("ids_role") || "Employee";
 
@@ -64,11 +73,13 @@ export default function TicketDetail() {
       const ticketResponse = await getTicket(id);
       const commentsResponse = await getTicketComments(id);
       const activitiesResponse = await getTicketActivities(id);
+      const attachmentsResponse = await getAttachments(id);
 
       setTicket(ticketResponse.data);
       setSelectedStatus(ticketResponse.data.status);
       setComments(commentsResponse.data);
       setActivities(activitiesResponse.data);
+      setAttachments(attachmentsResponse.data);
     } catch (error) {
       console.error("Failed to load ticket details", error);
     } finally {
@@ -139,6 +150,30 @@ export default function TicketDetail() {
     }
   };
 
+  const handleUploadAttachment = async () => {
+    if (!selectedFile) {
+      alert("Please choose a file first.");
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      await uploadAttachment(id, formData);
+
+      setSelectedFile(null);
+      await loadTicketData();
+    } catch (error) {
+      console.error("Failed to upload attachment", error);
+      alert("Could not upload attachment.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
@@ -171,6 +206,7 @@ export default function TicketDetail() {
           ? `${activity.oldValue || ""} ${activity.newValue || ""}`
           : "",
       time: formatDate(activity.createdAt),
+      rawTime: activity.createdAt,
     })),
     ...visibleComments.map((comment) => ({
       id: "comment-" + comment.id,
@@ -179,11 +215,12 @@ export default function TicketDetail() {
       action: comment.isInternalNote ? "added an internal note" : "added a comment",
       comment: comment.message,
       time: formatDate(comment.createdAt),
+      rawTime: comment.createdAt,
       isInternalNote: comment.isInternalNote,
     })),
   ];
 
-  timeline.sort((a, b) => new Date(a.time) - new Date(b.time));
+  timeline.sort((a, b) => new Date(a.rawTime) - new Date(b.rawTime));
 
   const currentStatusIndex = statuses.indexOf(ticket.status);
 
@@ -226,16 +263,75 @@ export default function TicketDetail() {
             <div className="mt-6">
               <h3 className="font-medium mb-3">Attachments</h3>
 
-              <div className="flex items-center justify-between p-3 bg-accent border border-border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Paperclip className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <div className="text-sm font-medium">No attachments yet</div>
-                    <div className="text-xs text-muted-foreground">
-                      File upload can be added later
+              <div className="space-y-3">
+                <div className="p-4 bg-accent border border-border rounded-lg">
+                  <div className="flex flex-col md:flex-row md:items-center gap-3">
+                    <input
+                      type="file"
+                      onChange={(e) => setSelectedFile(e.target.files[0])}
+                      className="flex-1 text-sm"
+                    />
+
+                    <button
+                      onClick={handleUploadAttachment}
+                      disabled={uploading}
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-60"
+                    >
+                      <Upload className="w-4 h-4" />
+                      <span>{uploading ? "Uploading..." : "Upload"}</span>
+                    </button>
+                  </div>
+
+                  {selectedFile && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Selected: {selectedFile.name}
+                    </p>
+                  )}
+                </div>
+
+                {attachments.length === 0 ? (
+                  <div className="flex items-center justify-between p-3 bg-accent border border-border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Paperclip className="w-5 h-5 text-muted-foreground" />
+                      <div>
+                        <div className="text-sm font-medium">
+                          No attachments yet
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Upload screenshots, PDFs, or documents
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  attachments.map((attachment) => (
+                    <div
+                      key={attachment.id}
+                      className="flex items-center justify-between p-3 bg-accent border border-border rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Paperclip className="w-5 h-5 text-muted-foreground" />
+
+                        <div>
+                          <div className="text-sm font-medium">
+                            {attachment.fileName}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Uploaded {formatDate(attachment.uploadedAt)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <a
+                        href={`http://localhost:5046/api/Attachments/download/${attachment.id}`}
+                        className="flex items-center gap-1 px-3 py-1 border border-border rounded-lg hover:bg-background transition-colors text-sm"
+                      >
+                        <Download className="w-4 h-4" />
+                        Download
+                      </a>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

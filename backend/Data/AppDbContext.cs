@@ -17,5 +17,7 @@ namespace backend.Data
         public DbSet<TicketComment> TicketComments { get; set; }
 
         public DbSet<TicketActivity> TicketActivities { get; set; }
+
+        public DbSet<Attachment> Attachments { get; set; }
     }
 }
