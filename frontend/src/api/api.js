@@ -78,3 +78,22 @@ export const getAttachments = (ticketId) =>
 // =====================
 
 export const getAgents = () => api.get("/users/agents");
+
+// =====================
+// NOTIFICATIONS
+// =====================
+
+export const getNotifications = () =>
+  api.get("/Notifications");
+
+export const getUnreadNotificationCount = () =>
+  api.get("/Notifications/unread-count");
+
+export const markNotificationAsRead = (id) =>
+  api.put(`/Notifications/${id}/read`);
+
+export const markAllNotificationsAsRead = () =>
+  api.put("/Notifications/mark-all-read");
+
+export const archiveNotification = (id) =>
+  api.put(`/Notifications/${id}/archive`);
