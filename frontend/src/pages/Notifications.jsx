@@ -5,7 +5,9 @@ import {
   CheckCircle,
   AlertCircle,
   Archive,
+  ArrowLeft,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   getNotifications,
   markNotificationAsRead,
@@ -17,7 +19,8 @@ function getNotificationIcon(message) {
   const text = message.toLowerCase();
 
   if (text.includes("comment")) return MessageSquare;
-  if (text.includes("resolved") || text.includes("closed")) return CheckCircle;
+  if (text.includes("resolved") || text.includes("closed"))
+    return CheckCircle;
   if (text.includes("critical")) return AlertCircle;
 
   return Ticket;
@@ -96,13 +99,24 @@ export default function Notifications() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold">Notifications</h1>
+        <div className="flex items-center gap-4">
+          <Link
+            to="/dashboard"
+            className="p-2 rounded-lg hover:bg-accent transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
 
-          <p className="text-muted-foreground mt-1">
-            {unreadCount} unread notification{unreadCount !== 1 ? "s" : ""}
-          </p>
+          <div>
+            <h1 className="text-3xl font-semibold">Notifications</h1>
+
+            <p className="text-muted-foreground mt-1">
+              {unreadCount} unread notification
+              {unreadCount !== 1 ? "s" : ""}
+            </p>
+          </div>
         </div>
 
         <button
@@ -124,7 +138,9 @@ export default function Notifications() {
               <CheckCircle className="w-12 h-12 text-muted-foreground" />
             </div>
 
-            <h3 className="text-xl font-semibold mb-2">All caught up!</h3>
+            <h3 className="text-xl font-semibold mb-2">
+              All caught up!
+            </h3>
 
             <p className="text-muted-foreground">
               You do not have any notifications at the moment.
@@ -145,7 +161,11 @@ export default function Notifications() {
                   (!notification.isRead ? "bg-accent/30" : "")
                 }
               >
-                <div className={"p-3 rounded-full shrink-0 " + style.bgColor}>
+                <div
+                  className={
+                    "p-3 rounded-full shrink-0 " + style.bgColor
+                  }
+                >
                   <Icon className={"w-5 h-5 " + style.color} />
                 </div>
 
@@ -173,7 +193,9 @@ export default function Notifications() {
                   <div className="flex gap-2 mt-3">
                     {!notification.isRead && (
                       <button
-                        onClick={() => handleMarkAsRead(notification.id)}
+                        onClick={() =>
+                          handleMarkAsRead(notification.id)
+                        }
                         className="text-xs px-3 py-1 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
                       >
                         Mark Read
@@ -181,7 +203,9 @@ export default function Notifications() {
                     )}
 
                     <button
-                      onClick={() => handleArchive(notification.id)}
+                      onClick={() =>
+                        handleArchive(notification.id)
+                      }
                       className="flex items-center gap-1 text-xs px-3 py-1 border border-border rounded-lg hover:bg-accent transition-colors"
                     >
                       <Archive className="w-3 h-3" />

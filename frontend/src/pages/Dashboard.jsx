@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import * as signalR from "@microsoft/signalr";
 import {
   AreaChart,
   Area,
@@ -22,9 +23,14 @@ import {
   Trash2,
   Pencil,
   Eye,
+  Bell,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { getTickets, deleteTicket } from "../api/api";
+import {
+  getTickets,
+  deleteTicket,
+  getUnreadNotificationCount,
+} from "../api/api";
 
 function getPriorityColor(priority) {
   if (priority === "Critical") return "bg-destructive text-destructive-foreground";
@@ -49,6 +55,7 @@ function Dashboard() {
 
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [ticketToDelete, setTicketToDelete] = useState(null);
@@ -58,10 +65,34 @@ function Dashboard() {
     loadTickets();
   }, []);
 
+  useEffect(() => {
+  const connection = new signalR.HubConnectionBuilder()
+    .withUrl("http://localhost:5046/notificationHub")
+    .withAutomaticReconnect()
+    .build();
+
+  connection
+    .start()
+    .then(() => console.log("SignalR connected"))
+    .catch((error) => console.error("SignalR connection failed:", error));
+
+  connection.on("ReceiveNotification", async () => {
+    const notificationResponse = await getUnreadNotificationCount();
+    setUnreadCount(notificationResponse.data);
+  });
+
+  return () => {
+    connection.stop();
+  };
+}, []);
+
   async function loadTickets() {
     try {
       const response = await getTickets();
       setTickets(response.data);
+
+      const notificationResponse = await getUnreadNotificationCount();
+      setUnreadCount(notificationResponse.data);
     } catch (error) {
       alert("Could not load tickets.");
     } finally {
@@ -208,6 +239,19 @@ function Dashboard() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            to="/notifications"
+            className="relative flex items-center justify-center p-2 border border-border rounded-lg hover:bg-accent transition-colors"
+          >
+            <Bell className="w-5 h-5" />
+
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-5 h-5 px-1 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
+          </Link>
+
           {role === "Employee" && (
             <Link
               to="/tickets/create"
