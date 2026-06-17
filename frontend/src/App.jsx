@@ -6,6 +6,8 @@ import Dashboard from "./pages/Dashboard";
 import CreateTicket from "./pages/CreateTicket";
 import EditTicket from "./pages/EditTicket";
 import TicketDetail from "./pages/TicketDetail";
+import MyTickets from "./pages/MyTickets";
+import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -37,6 +39,28 @@ function App() {
             <ProtectedRoute>
               <AppLayout>
                 <Profile />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/tickets"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <MyTickets />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Notifications />
               </AppLayout>
             </ProtectedRoute>
           }

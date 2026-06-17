@@ -1,6 +1,8 @@
 using backend.Data;
+using backend.Hubs;
 using backend.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Controllers;
@@ -10,10 +12,29 @@ namespace backend.Controllers;
 public class TicketsController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly IHubContext<NotificationHub> _hub;
 
-    public TicketsController(AppDbContext context)
+    public TicketsController(AppDbContext context, IHubContext<NotificationHub> hub)
     {
         _context = context;
+        _hub = hub;
+    }
+
+    private async Task CreateNotification(int? ticketId, string message)
+    {
+        var notification = new Notification
+        {
+            TicketId = ticketId,
+            Message = message,
+            IsRead = false,
+            IsArchived = false,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        await _hub.Clients.All.SendAsync("ReceiveNotification", notification);
     }
 
     [HttpGet]
@@ -57,6 +78,11 @@ public class TicketsController : ControllerBase
 
         await _context.SaveChangesAsync();
 
+        await CreateNotification(
+            ticket.Id,
+            $"New ticket created: TKT-{ticket.Id} - {ticket.Title}"
+        );
+
         return CreatedAtAction(nameof(GetTicket), new { id = ticket.Id }, ticket);
     }
 
@@ -89,6 +115,11 @@ public class TicketsController : ControllerBase
 
         await _context.SaveChangesAsync();
 
+        await CreateNotification(
+            ticket.Id,
+            $"Ticket TKT-{ticket.Id} was updated."
+        );
+
         return NoContent();
     }
 
@@ -112,13 +143,16 @@ public class TicketsController : ControllerBase
 
         await _context.SaveChangesAsync();
 
+        await CreateNotification(
+            ticket.Id,
+            $"Ticket TKT-{ticket.Id} was deleted."
+        );
+
         _context.Tickets.Remove(ticket);
         await _context.SaveChangesAsync();
 
         return NoContent();
     }
-
-    // ASSIGN TICKET
 
     [HttpPut("{id}/assign/{agentId}")]
     public async Task<IActionResult> AssignTicket(int id, int agentId)
@@ -147,10 +181,13 @@ public class TicketsController : ControllerBase
 
         await _context.SaveChangesAsync();
 
+        await CreateNotification(
+            ticket.Id,
+            $"Ticket TKT-{ticket.Id} was assigned to Agent {agentId}."
+        );
+
         return Ok(ticket);
     }
-
-    // UPDATE STATUS
 
     [HttpPut("{id}/status/{status}")]
     public async Task<IActionResult> UpdateStatus(int id, string status)
@@ -181,10 +218,13 @@ public class TicketsController : ControllerBase
 
         await _context.SaveChangesAsync();
 
+        await CreateNotification(
+            ticket.Id,
+            $"Ticket TKT-{ticket.Id} status changed from {oldStatus} to {status}."
+        );
+
         return Ok(ticket);
     }
-
-    // ADD COMMENT
 
     [HttpPost("{id}/comments")]
     public async Task<IActionResult> AddComment(int id, TicketComment comment)
@@ -214,10 +254,13 @@ public class TicketsController : ControllerBase
 
         await _context.SaveChangesAsync();
 
+        await CreateNotification(
+            id,
+            $"New comment added on Ticket TKT-{id}."
+        );
+
         return Ok(comment);
     }
-
-    // GET COMMENTS
 
     [HttpGet("{id}/comments")]
     public async Task<ActionResult<List<TicketComment>>> GetComments(int id)
@@ -227,8 +270,6 @@ public class TicketsController : ControllerBase
             .OrderBy(c => c.CreatedAt)
             .ToListAsync();
     }
-
-    // GET ACTIVITY LOG
 
     [HttpGet("{id}/activities")]
     public async Task<ActionResult<List<TicketActivity>>> GetActivities(int id)

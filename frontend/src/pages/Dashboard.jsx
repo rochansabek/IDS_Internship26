@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import * as signalR from "@microsoft/signalr";
 import {
   AreaChart,
   Area,
@@ -22,26 +23,14 @@ import {
   Trash2,
   Pencil,
   Eye,
+  Bell,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { getTickets, deleteTicket } from "../api/api";
-
-const ticketTrend = [
-  { name: "Mon", tickets: 45 },
-  { name: "Tue", tickets: 52 },
-  { name: "Wed", tickets: 48 },
-  { name: "Thu", tickets: 61 },
-  { name: "Fri", tickets: 55 },
-  { name: "Sat", tickets: 32 },
-  { name: "Sun", tickets: 28 },
-];
-
-const priorityData = [
-  { name: "Critical", value: 18, color: "#d4183d" },
-  { name: "High", value: 42, color: "#f59e0b" },
-  { name: "Medium", value: 64, color: "#3b82f6" },
-  { name: "Low", value: 32, color: "#10b981" },
-];
+import {
+  getTickets,
+  deleteTicket,
+  getUnreadNotificationCount,
+} from "../api/api";
 
 function getPriorityColor(priority) {
   if (priority === "Critical") return "bg-destructive text-destructive-foreground";
@@ -66,6 +55,7 @@ function Dashboard() {
 
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [ticketToDelete, setTicketToDelete] = useState(null);
@@ -75,10 +65,34 @@ function Dashboard() {
     loadTickets();
   }, []);
 
+  useEffect(() => {
+  const connection = new signalR.HubConnectionBuilder()
+    .withUrl("http://localhost:5046/notificationHub")
+    .withAutomaticReconnect()
+    .build();
+
+  connection
+    .start()
+    .then(() => console.log("SignalR connected"))
+    .catch((error) => console.error("SignalR connection failed:", error));
+
+  connection.on("ReceiveNotification", async () => {
+    const notificationResponse = await getUnreadNotificationCount();
+    setUnreadCount(notificationResponse.data);
+  });
+
+  return () => {
+    connection.stop();
+  };
+}, []);
+
   async function loadTickets() {
     try {
       const response = await getTickets();
       setTickets(response.data);
+
+      const notificationResponse = await getUnreadNotificationCount();
+      setUnreadCount(notificationResponse.data);
     } catch (error) {
       alert("Could not load tickets.");
     } finally {
@@ -117,6 +131,8 @@ function Dashboard() {
     navigate("/login");
   }
 
+  const totalCount = tickets.length;
+
   const openCount = tickets.filter((ticket) => ticket.status === "Open").length;
 
   const completedCount = tickets.filter(
@@ -136,11 +152,47 @@ function Dashboard() {
 
   const recentTickets = tickets.slice(-5).reverse();
 
+  const ticketTrend = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+    (day) => ({
+      name: day,
+      tickets: tickets.filter((ticket) => {
+        if (!ticket.createdAt) return false;
+        const ticketDay = new Date(ticket.createdAt).toLocaleDateString("en-US", {
+          weekday: "short",
+        });
+        return ticketDay === day;
+      }).length,
+    })
+  );
+
+  const priorityData = [
+    {
+      name: "Critical",
+      value: tickets.filter((ticket) => ticket.priority === "Critical").length,
+      color: "#d4183d",
+    },
+    {
+      name: "High",
+      value: tickets.filter((ticket) => ticket.priority === "High").length,
+      color: "#f59e0b",
+    },
+    {
+      name: "Medium",
+      value: tickets.filter((ticket) => ticket.priority === "Medium").length,
+      color: "#3b82f6",
+    },
+    {
+      name: "Low",
+      value: tickets.filter((ticket) => ticket.priority === "Low").length,
+      color: "#10b981",
+    },
+  ];
+
   const stats = [
     {
-      label: "Open Tickets",
-      value: openCount,
-      change: "+12%",
+      label: "Total Tickets",
+      value: totalCount,
+      change: "Live",
       trend: "up",
       icon: Ticket,
       color: "text-chart-1",
@@ -149,7 +201,7 @@ function Dashboard() {
     {
       label: "Completed Tickets",
       value: completedCount,
-      change: "+8%",
+      change: "Done",
       trend: "up",
       icon: CheckCircle,
       color: "text-chart-2",
@@ -158,8 +210,8 @@ function Dashboard() {
     {
       label: "Pending Tickets",
       value: pendingCount,
-      change: "-5%",
-      trend: "down",
+      change: "Active",
+      trend: "up",
       icon: Clock,
       color: "text-chart-4",
       bgColor: "bg-chart-4/10",
@@ -167,8 +219,8 @@ function Dashboard() {
     {
       label: "Critical Tickets",
       value: criticalCount,
-      change: "+3%",
-      trend: "up",
+      change: "Urgent",
+      trend: "down",
       icon: AlertCircle,
       color: "text-destructive",
       bgColor: "bg-destructive/10",
@@ -187,6 +239,19 @@ function Dashboard() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            to="/notifications"
+            className="relative flex items-center justify-center p-2 border border-border rounded-lg hover:bg-accent transition-colors"
+          >
+            <Bell className="w-5 h-5" />
+
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-5 h-5 px-1 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
+          </Link>
+
           {role === "Employee" && (
             <Link
               to="/tickets/create"
@@ -260,7 +325,7 @@ function Dashboard() {
 
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="name" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" />
+              <YAxis stroke="#6b7280" allowDecimals={false} />
 
               <Tooltip
                 contentStyle={{
@@ -418,7 +483,9 @@ function Dashboard() {
                     </td>
 
                     <td className="py-4 px-4 text-sm text-muted-foreground">
-                      {new Date(ticket.createdAt).toLocaleDateString()}
+                      {ticket.createdAt
+                        ? new Date(ticket.createdAt).toLocaleDateString()
+                        : "N/A"}
                     </td>
 
                     <td className="py-4 px-4">
