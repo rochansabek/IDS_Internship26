@@ -1,6 +1,7 @@
 using backend.Data;
 using backend.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace backend.Controllers
 {
@@ -11,9 +12,7 @@ namespace backend.Controllers
         private readonly AppDbContext _context;
         private readonly IWebHostEnvironment _environment;
 
-        public AttachmentsController(
-            AppDbContext context,
-            IWebHostEnvironment environment)
+        public AttachmentsController(AppDbContext context, IWebHostEnvironment environment)
         {
             _context = context;
             _environment = environment;
@@ -21,8 +20,8 @@ namespace backend.Controllers
 
         [HttpPost("upload")]
         public async Task<IActionResult> UploadFile(
-            IFormFile file,
-            int ticketId)
+            [FromForm] IFormFile file,
+            [FromQuery] int ticketId)
         {
             if (file == null || file.Length == 0)
             {
@@ -36,27 +35,17 @@ namespace backend.Controllers
                 return NotFound("Ticket not found.");
             }
 
-            var uploadsFolder = Path.Combine(
-                _environment.ContentRootPath,
-                "Uploads"
-            );
+            var uploadsFolder = Path.Combine(_environment.ContentRootPath, "Uploads");
 
             if (!Directory.Exists(uploadsFolder))
             {
                 Directory.CreateDirectory(uploadsFolder);
             }
 
-            var uniqueFileName =
-                Guid.NewGuid().ToString() + "_" + file.FileName;
+            var storedFileName = Guid.NewGuid().ToString() + "_" + file.FileName;
+            var fullPath = Path.Combine(uploadsFolder, storedFileName);
 
-            var filePath = Path.Combine(
-                uploadsFolder,
-                uniqueFileName
-            );
-
-            using (var stream = new FileStream(
-                filePath,
-                FileMode.Create))
+            using (var stream = new FileStream(fullPath, FileMode.Create))
             {
                 await file.CopyToAsync(stream);
             }
@@ -65,7 +54,7 @@ namespace backend.Controllers
             {
                 TicketId = ticketId,
                 FileName = file.FileName,
-                FilePath = uniqueFileName,
+                FilePath = storedFileName,
                 ContentType = file.ContentType,
                 UploadedAt = DateTime.UtcNow
             };
@@ -77,12 +66,12 @@ namespace backend.Controllers
         }
 
         [HttpGet("ticket/{ticketId}")]
-        public IActionResult GetTicketAttachments(int ticketId)
+        public async Task<IActionResult> GetTicketAttachments(int ticketId)
         {
-            var attachments = _context.Attachments
+            var attachments = await _context.Attachments
                 .Where(a => a.TicketId == ticketId)
                 .OrderByDescending(a => a.UploadedAt)
-                .ToList();
+                .ToListAsync();
 
             return Ok(attachments);
         }
@@ -90,37 +79,24 @@ namespace backend.Controllers
         [HttpGet("download/{id}")]
         public async Task<IActionResult> DownloadFile(int id)
         {
-            var attachment =
-                await _context.Attachments.FindAsync(id);
+            var attachment = await _context.Attachments.FindAsync(id);
 
             if (attachment == null)
             {
-                return NotFound();
+                return NotFound("Attachment not found.");
             }
 
-            var uploadsFolder = Path.Combine(
-                _environment.ContentRootPath,
-                "Uploads"
-            );
+            var uploadsFolder = Path.Combine(_environment.ContentRootPath, "Uploads");
+            var fullPath = Path.Combine(uploadsFolder, attachment.FilePath);
 
-            var filePath = Path.Combine(
-                uploadsFolder,
-                attachment.FilePath
-            );
-
-            if (!System.IO.File.Exists(filePath))
+            if (!System.IO.File.Exists(fullPath))
             {
-                return NotFound("File not found.");
+                return NotFound("File not found on server.");
             }
 
-            var bytes =
-                await System.IO.File.ReadAllBytesAsync(filePath);
+            var bytes = await System.IO.File.ReadAllBytesAsync(fullPath);
 
-            return File(
-                bytes,
-                attachment.ContentType,
-                attachment.FileName
-            );
+            return File(bytes, attachment.ContentType, attachment.FileName);
         }
     }
 }

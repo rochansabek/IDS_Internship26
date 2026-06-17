@@ -52,26 +52,42 @@ function Sidebar({ isOpen, onClose }) {
         </div>
 
         <nav className="flex flex-col gap-2 flex-1">
-          <Link to="/dashboard" onClick={onClose} className={linkClass("/dashboard")}>
+          <Link
+            to="/dashboard"
+            onClick={onClose}
+            className={linkClass("/dashboard")}
+          >
             <LayoutDashboard className="w-5 h-5" />
             Dashboard
           </Link>
 
           {role === "Employee" && (
-            <Link to="/dashboard" onClick={onClose} className={linkClass("/dashboard")}>
+            <Link
+              to="/tickets"
+              onClick={onClose}
+              className={linkClass("/tickets")}
+            >
               <Ticket className="w-5 h-5" />
               My Tickets
             </Link>
           )}
 
-          {role === "Agent" && (
+          {(role === "Agent" || role === "SupportAgent") && (
             <>
-              <Link to="/dashboard" onClick={onClose} className={linkClass("/dashboard")}>
+              <Link
+                to="/tickets"
+                onClick={onClose}
+                className={linkClass("/tickets")}
+              >
                 <Ticket className="w-5 h-5" />
                 Assigned Tickets
               </Link>
 
-              <Link to="/dashboard" onClick={onClose} className={linkClass("/dashboard")}>
+              <Link
+                to="/tickets"
+                onClick={onClose}
+                className={linkClass("/tickets")}
+              >
                 <Ticket className="w-5 h-5" />
                 All Tickets
               </Link>
@@ -80,17 +96,29 @@ function Sidebar({ isOpen, onClose }) {
 
           {role === "Admin" && (
             <>
-              <Link to="/dashboard" onClick={onClose} className={linkClass("/dashboard")}>
+              <Link
+                to="/tickets"
+                onClick={onClose}
+                className={linkClass("/tickets")}
+              >
                 <Ticket className="w-5 h-5" />
                 All Tickets
               </Link>
 
-              <Link to="/users" onClick={onClose} className={linkClass("/users")}>
+              <Link
+                to="/users"
+                onClick={onClose}
+                className={linkClass("/users")}
+              >
                 <Users className="w-5 h-5" />
                 Manage Users
               </Link>
 
-              <Link to="/settings" onClick={onClose} className={linkClass("/settings")}>
+              <Link
+                to="/settings"
+                onClick={onClose}
+                className={linkClass("/settings")}
+              >
                 <Settings className="w-5 h-5" />
                 Settings
               </Link>

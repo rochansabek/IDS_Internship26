@@ -22,14 +22,11 @@ export const getTickets = () => api.get("/tickets");
 
 export const getTicket = (id) => api.get(`/tickets/${id}`);
 
-export const createTicket = (ticket) =>
-  api.post("/tickets", ticket);
+export const createTicket = (ticket) => api.post("/tickets", ticket);
 
-export const updateTicket = (id, ticket) =>
-  api.put(`/tickets/${id}`, ticket);
+export const updateTicket = (id, ticket) => api.put(`/tickets/${id}`, ticket);
 
-export const deleteTicket = (id) =>
-  api.delete(`/tickets/${id}`);
+export const deleteTicket = (id) => api.delete(`/tickets/${id}`);
 
 // =====================
 // ASSIGNMENT
@@ -63,13 +60,6 @@ export const getTicketActivities = (ticketId) =>
   api.get(`/tickets/${ticketId}/activities`);
 
 // =====================
-// AGENTS (for future)
-// =====================
-
-export const getAgents = () =>
-  api.get("/users/agents");
-
-// =====================
 // ATTACHMENTS
 // =====================
 
@@ -82,3 +72,9 @@ export const uploadAttachment = (ticketId, formData) =>
 
 export const getAttachments = (ticketId) =>
   api.get(`/Attachments/ticket/${ticketId}`);
+
+// =====================
+// AGENTS
+// =====================
+
+export const getAgents = () => api.get("/users/agents");

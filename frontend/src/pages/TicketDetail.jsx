@@ -61,7 +61,7 @@ export default function TicketDetail() {
   const [isInternalNote, setIsInternalNote] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("");
   const [agentId, setAgentId] = useState("");
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -151,20 +151,28 @@ export default function TicketDetail() {
   };
 
   const handleUploadAttachment = async () => {
-    if (!selectedFile) {
-      alert("Please choose a file first.");
+    if (selectedFiles.length === 0) {
+      alert("Please choose at least one file first.");
       return;
     }
 
     try {
       setUploading(true);
 
-      const formData = new FormData();
-      formData.append("file", selectedFile);
+      for (const file of selectedFiles) {
+        const formData = new FormData();
+        formData.append("file", file);
 
-      await uploadAttachment(id, formData);
+        await uploadAttachment(id, formData);
+      }
 
-      setSelectedFile(null);
+      setSelectedFiles([]);
+
+      const fileInput = document.getElementById("ticket-detail-file-upload");
+      if (fileInput) {
+        fileInput.value = "";
+      }
+
       await loadTicketData();
     } catch (error) {
       console.error("Failed to upload attachment", error);
@@ -267,8 +275,12 @@ export default function TicketDetail() {
                 <div className="p-4 bg-accent border border-border rounded-lg">
                   <div className="flex flex-col md:flex-row md:items-center gap-3">
                     <input
+                      id="ticket-detail-file-upload"
                       type="file"
-                      onChange={(e) => setSelectedFile(e.target.files[0])}
+                      multiple
+                      onChange={(e) =>
+                        setSelectedFiles(Array.from(e.target.files))
+                      }
                       className="flex-1 text-sm"
                     />
 
@@ -282,10 +294,14 @@ export default function TicketDetail() {
                     </button>
                   </div>
 
-                  {selectedFile && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Selected: {selectedFile.name}
-                    </p>
+                  {selectedFiles.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {selectedFiles.map((file, index) => (
+                        <p key={index} className="text-xs text-muted-foreground">
+                          Selected: {file.name}
+                        </p>
+                      ))}
+                    </div>
                   )}
                 </div>
 

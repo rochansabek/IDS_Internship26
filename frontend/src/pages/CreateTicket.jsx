@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Upload, X, FileText, ArrowLeft } from "lucide-react";
-import { createTicket } from "../api/api";
+import { createTicket, uploadAttachment } from "../api/api";
 
 export default function CreateTicket() {
   const navigate = useNavigate();
@@ -23,10 +23,19 @@ export default function CreateTicket() {
     try {
       setIsSubmitting(true);
 
-      await createTicket(formData);
+      const response = await createTicket(formData);
+      const newTicketId = response.data.id;
 
-      navigate("/dashboard");
+      for (const file of files) {
+        const attachmentData = new FormData();
+        attachmentData.append("file", file);
+
+        await uploadAttachment(newTicketId, attachmentData);
+      }
+
+      navigate(`/tickets/${newTicketId}`);
     } catch (error) {
+      console.error(error);
       alert("Could not create ticket. Please try again.");
     } finally {
       setIsSubmitting(false);
