@@ -15,7 +15,6 @@ namespace backend.Controllers
             _context = context;
         }
 
-        // Get all active notifications
         [HttpGet]
         public async Task<IActionResult> GetNotifications()
         {
@@ -27,7 +26,17 @@ namespace backend.Controllers
             return Ok(notifications);
         }
 
-        // Get unread count
+        [HttpGet("archived")]
+        public async Task<IActionResult> GetArchivedNotifications()
+        {
+            var notifications = await _context.Notifications
+                .Where(n => n.IsArchived)
+                .OrderByDescending(n => n.CreatedAt)
+                .ToListAsync();
+
+            return Ok(notifications);
+        }
+
         [HttpGet("unread-count")]
         public async Task<IActionResult> GetUnreadCount()
         {
@@ -37,7 +46,6 @@ namespace backend.Controllers
             return Ok(count);
         }
 
-        // Mark one notification as read
         [HttpPut("{id}/read")]
         public async Task<IActionResult> MarkAsRead(int id)
         {
@@ -49,13 +57,11 @@ namespace backend.Controllers
             }
 
             notification.IsRead = true;
-
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
-        // Mark all notifications as read
         [HttpPut("mark-all-read")]
         public async Task<IActionResult> MarkAllAsRead()
         {
@@ -73,7 +79,6 @@ namespace backend.Controllers
             return NoContent();
         }
 
-        // Archive notification
         [HttpPut("{id}/archive")]
         public async Task<IActionResult> ArchiveNotification(int id)
         {
@@ -85,13 +90,27 @@ namespace backend.Controllers
             }
 
             notification.IsArchived = true;
-
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
-        // Optional hard delete
+        [HttpPut("{id}/unarchive")]
+        public async Task<IActionResult> UnarchiveNotification(int id)
+        {
+            var notification = await _context.Notifications.FindAsync(id);
+
+            if (notification == null)
+            {
+                return NotFound("Notification not found.");
+            }
+
+            notification.IsArchived = false;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteNotification(int id)
         {
@@ -103,7 +122,6 @@ namespace backend.Controllers
             }
 
             _context.Notifications.Remove(notification);
-
             await _context.SaveChangesAsync();
 
             return NoContent();
