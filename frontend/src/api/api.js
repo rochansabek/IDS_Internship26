@@ -127,3 +127,22 @@ export const exportPdfReport = () =>
   api.get("/reports/export/pdf", {
     responseType: "blob",
   });
+
+  // =====================
+// AI
+// =====================
+
+export const categorizeTicket = (data) =>
+  api.post("/ai/categorize-ticket", data);
+
+export const detectPriority = (data) =>
+  api.post("/ai/detect-priority", data);
+
+export const summarizeTicket = (data) =>
+  api.post("/ai/summarize-ticket", data);
+
+export const getTroubleshootingSuggestions = (data) =>
+  api.post("/ai/troubleshooting-suggestions", data);
+
+export const askAiChatbot = (data) =>
+  api.post("/ai/chatbot", data);
