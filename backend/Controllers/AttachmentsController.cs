@@ -5,6 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace backend.Controllers
 {
+    public class FileUploadRequest
+    {
+        public IFormFile File { get; set; } = null!;
+    }
+
     [ApiController]
     [Route("api/[controller]")]
     public class AttachmentsController : ControllerBase
@@ -12,17 +17,23 @@ namespace backend.Controllers
         private readonly AppDbContext _context;
         private readonly IWebHostEnvironment _environment;
 
-        public AttachmentsController(AppDbContext context, IWebHostEnvironment environment)
+        public AttachmentsController(
+            AppDbContext context,
+            IWebHostEnvironment environment)
         {
             _context = context;
             _environment = environment;
         }
 
+        // POST: api/Attachments/upload?ticketId=1
         [HttpPost("upload")]
+        [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadFile(
-            [FromForm] IFormFile file,
+            [FromForm] FileUploadRequest request,
             [FromQuery] int ticketId)
         {
+            var file = request.File;
+
             if (file == null || file.Length == 0)
             {
                 return BadRequest("No file selected.");
@@ -35,15 +46,23 @@ namespace backend.Controllers
                 return NotFound("Ticket not found.");
             }
 
-            var uploadsFolder = Path.Combine(_environment.ContentRootPath, "Uploads");
+            var uploadsFolder = Path.Combine(
+                _environment.ContentRootPath,
+                "Uploads"
+            );
 
             if (!Directory.Exists(uploadsFolder))
             {
                 Directory.CreateDirectory(uploadsFolder);
             }
 
-            var storedFileName = Guid.NewGuid().ToString() + "_" + file.FileName;
-            var fullPath = Path.Combine(uploadsFolder, storedFileName);
+            var storedFileName =
+                $"{Guid.NewGuid()}_{file.FileName}";
+
+            var fullPath = Path.Combine(
+                uploadsFolder,
+                storedFileName
+            );
 
             using (var stream = new FileStream(fullPath, FileMode.Create))
             {
@@ -65,6 +84,7 @@ namespace backend.Controllers
             return Ok(attachment);
         }
 
+        // GET: api/Attachments/ticket/1
         [HttpGet("ticket/{ticketId}")]
         public async Task<IActionResult> GetTicketAttachments(int ticketId)
         {
@@ -76,6 +96,7 @@ namespace backend.Controllers
             return Ok(attachments);
         }
 
+        // GET: api/Attachments/download/5
         [HttpGet("download/{id}")]
         public async Task<IActionResult> DownloadFile(int id)
         {
@@ -86,8 +107,15 @@ namespace backend.Controllers
                 return NotFound("Attachment not found.");
             }
 
-            var uploadsFolder = Path.Combine(_environment.ContentRootPath, "Uploads");
-            var fullPath = Path.Combine(uploadsFolder, attachment.FilePath);
+            var uploadsFolder = Path.Combine(
+                _environment.ContentRootPath,
+                "Uploads"
+            );
+
+            var fullPath = Path.Combine(
+                uploadsFolder,
+                attachment.FilePath
+            );
 
             if (!System.IO.File.Exists(fullPath))
             {
@@ -96,7 +124,11 @@ namespace backend.Controllers
 
             var bytes = await System.IO.File.ReadAllBytesAsync(fullPath);
 
-            return File(bytes, attachment.ContentType, attachment.FileName);
+            return File(
+                bytes,
+                attachment.ContentType,
+                attachment.FileName
+            );
         }
     }
 }
