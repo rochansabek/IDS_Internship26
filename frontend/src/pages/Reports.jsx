@@ -30,6 +30,8 @@ import {
   getTicketsByStatus,
   getMonthlyTrend,
   getAgentPerformance,
+  exportExcelReport,
+  exportPdfReport,
 } from "../api/api";
 
 const COLORS = ["#3b82f6", "#f59e0b", "#10b981", "#8b5cf6", "#6b7280"];
@@ -80,6 +82,48 @@ function Reports() {
     }
   }
 
+  async function handleExportExcel() {
+    try {
+      const response = await exportExcelReport();
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.setAttribute("download", "ticket-report.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to export Excel report:", error);
+      alert("Failed to export Excel report.");
+    }
+  }
+
+  async function handleExportPdf() {
+    try {
+      const response = await exportPdfReport();
+
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/pdf" })
+      );
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.setAttribute("download", "ticket-report.pdf");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to export PDF report:", error);
+      alert("Failed to export PDF report.");
+    }
+  }
+
   const kpiData = [
     {
       label: "Total Tickets",
@@ -125,6 +169,7 @@ function Reports() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold">Reports & Analytics</h1>
@@ -133,19 +178,31 @@ function Reports() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button className="flex items-center gap-2 px-4 py-2 bg-accent text-foreground rounded-lg hover:bg-accent/80 transition-colors">
             <Calendar className="w-5 h-5" />
             <span>All Time</span>
           </button>
 
-          <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity">
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+          >
             <Download className="w-5 h-5" />
-            <span>Export</span>
+            <span>Export Excel</span>
+          </button>
+
+          <button
+            onClick={handleExportPdf}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+          >
+            <Download className="w-5 h-5" />
+            <span>Export PDF</span>
           </button>
         </div>
       </div>
 
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {kpiData.map((kpi) => {
           const Icon = kpi.icon;
@@ -157,6 +214,7 @@ function Reports() {
             >
               <div className="flex items-center justify-between mb-4">
                 <Icon className={`w-6 h-6 ${kpi.color}`} />
+
                 <div
                   className={`text-sm ${
                     kpi.trend === "down"
@@ -175,103 +233,126 @@ function Reports() {
         })}
       </div>
 
+      {/* Monthly Ticket Trends */}
       <div className="bg-card border border-border rounded-xl p-6">
         <h2 className="text-xl font-semibold mb-6">Monthly Ticket Trends</h2>
 
-        <ResponsiveContainer width="100%" height={350}>
-          <AreaChart data={monthlyData}>
-            <defs>
-              <linearGradient id="colorTickets" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-              </linearGradient>
+        {monthlyData.length === 0 ? (
+          <p className="text-muted-foreground">No monthly ticket data yet.</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={350}>
+            <AreaChart data={monthlyData}>
+              <defs>
+                <linearGradient id="colorTickets" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                </linearGradient>
 
-              <linearGradient id="colorResolved" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-              </linearGradient>
-            </defs>
+                <linearGradient id="colorResolved" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                </linearGradient>
+              </defs>
 
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="month" stroke="#6b7280" />
-            <YAxis stroke="#6b7280" />
-            <Tooltip />
-            <Legend />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="month" stroke="#6b7280" />
+              <YAxis stroke="#6b7280" />
+              <Tooltip />
+              <Legend />
 
-            <Area
-              type="monotone"
-              dataKey="tickets"
-              stroke="#3b82f6"
-              fill="url(#colorTickets)"
-              name="Total Tickets"
-            />
+              <Area
+                type="monotone"
+                dataKey="tickets"
+                stroke="#3b82f6"
+                fill="url(#colorTickets)"
+                name="Total Tickets"
+              />
 
-            <Area
-              type="monotone"
-              dataKey="resolved"
-              stroke="#10b981"
-              fill="url(#colorResolved)"
-              name="Resolved Tickets"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+              <Area
+                type="monotone"
+                dataKey="resolved"
+                stroke="#10b981"
+                fill="url(#colorResolved)"
+                name="Resolved Tickets"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
+      {/* Status and Category Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-card border border-border rounded-xl p-6">
           <h2 className="text-xl font-semibold mb-6">Tickets by Status</h2>
 
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={statusData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="name" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" />
-              <Tooltip />
-              <Bar dataKey="count" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {statusData.length === 0 ? (
+            <p className="text-muted-foreground">No status data yet.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={statusData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="name" stroke="#6b7280" />
+                <YAxis stroke="#6b7280" />
+                <Tooltip />
+                <Bar dataKey="count" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         <div className="bg-card border border-border rounded-xl p-6">
           <h2 className="text-xl font-semibold mb-6">Tickets by Category</h2>
 
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={categoryData}
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                dataKey="value"
-                label={({ name, percent }) =>
-                  `${name} ${(percent * 100).toFixed(0)}%`
-                }
-              >
-                {categoryData.map((entry, index) => (
-                  <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
+          {categoryData.length === 0 ? (
+            <p className="text-muted-foreground">No category data yet.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={categoryData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  dataKey="value"
+                  label={({ name, percent }) =>
+                    `${name} ${(percent * 100).toFixed(0)}%`
+                  }
+                >
+                  {categoryData.map((entry, index) => (
+                    <Cell
+                      key={entry.name}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
 
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
+      {/* Priority Chart */}
       <div className="bg-card border border-border rounded-xl p-6">
         <h2 className="text-xl font-semibold mb-6">Tickets by Priority</h2>
 
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={priorityData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="name" stroke="#6b7280" />
-            <YAxis stroke="#6b7280" />
-            <Tooltip />
-            <Bar dataKey="value" fill="#10b981" radius={[8, 8, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        {priorityData.length === 0 ? (
+          <p className="text-muted-foreground">No priority data yet.</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={priorityData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="name" stroke="#6b7280" />
+              <YAxis stroke="#6b7280" />
+              <Tooltip />
+              <Bar dataKey="value" fill="#10b981" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
+      {/* Agent Performance */}
       <div className="bg-card border border-border rounded-xl p-6">
         <h2 className="text-xl font-semibold mb-6">Agent Performance</h2>
 
@@ -312,6 +393,7 @@ function Reports() {
                         <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-medium">
                           {agent.name.charAt(0)}
                         </div>
+
                         <span className="font-medium">{agent.name}</span>
                       </div>
                     </td>
