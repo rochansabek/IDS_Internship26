@@ -24,9 +24,7 @@ function AppLayout({ children }) {
 
       <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
 
-      <main className="min-h-screen pl-16">
-        {children}
-      </main>
+      <main className="min-h-screen pl-16">{children}</main>
     </div>
   );
 }

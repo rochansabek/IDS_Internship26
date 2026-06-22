@@ -6,6 +6,7 @@ import {
   Settings,
   X,
   User,
+  BarChart3,
 } from "lucide-react";
 
 function Sidebar({ isOpen, onClose }) {
@@ -59,6 +60,15 @@ function Sidebar({ isOpen, onClose }) {
           >
             <LayoutDashboard className="w-5 h-5" />
             Dashboard
+          </Link>
+
+          <Link
+            to="/reports"
+            onClick={onClose}
+            className={linkClass("/reports")}
+          >
+            <BarChart3 className="w-5 h-5" />
+            Reports
           </Link>
 
           {role === "Employee" && (
