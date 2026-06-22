@@ -24,7 +24,8 @@ export const getTicket = (id) => api.get(`/tickets/${id}`);
 
 export const createTicket = (ticket) => api.post("/tickets", ticket);
 
-export const updateTicket = (id, ticket) => api.put(`/tickets/${id}`, ticket);
+export const updateTicket = (id, ticket) =>
+  api.put(`/tickets/${id}`, ticket);
 
 export const deleteTicket = (id) => api.delete(`/tickets/${id}`);
 
@@ -97,3 +98,39 @@ export const markAllNotificationsAsRead = () =>
 
 export const archiveNotification = (id) =>
   api.put(`/Notifications/${id}/archive`);
+
+// =====================
+// REPORTS
+// =====================
+
+export const getReportSummary = () =>
+  api.get("/reports/summary");
+
+export const getTicketsByPriority = () =>
+  api.get("/reports/tickets-by-priority");
+
+export const getTicketsByCategory = () =>
+  api.get("/reports/tickets-by-category");
+
+export const getTicketsByStatus = () =>
+  api.get("/reports/tickets-by-status");
+
+export const getMonthlyTrend = () =>
+  api.get("/reports/monthly-trend");
+
+export const getAgentPerformance = () =>
+  api.get("/reports/agent-performance");
+
+// =====================
+// REPORT EXPORTS
+// =====================
+
+export const exportExcelReport = () =>
+  api.get("/reports/export/excel", {
+    responseType: "blob",
+  });
+
+export const exportPdfReport = () =>
+  api.get("/reports/export/pdf", {
+    responseType: "blob",
+  });
