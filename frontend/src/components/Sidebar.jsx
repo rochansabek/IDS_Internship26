@@ -7,6 +7,7 @@ import {
   X,
   User,
   BarChart3,
+  Bot,
 } from "lucide-react";
 
 function Sidebar({ isOpen, onClose }) {
@@ -69,6 +70,15 @@ function Sidebar({ isOpen, onClose }) {
           >
             <BarChart3 className="w-5 h-5" />
             Reports
+          </Link>
+
+          <Link
+            to="/ai-assistant"
+            onClick={onClose}
+            className={linkClass("/ai-assistant")}
+          >
+            <Bot className="w-5 h-5" />
+            AI Assistant
           </Link>
 
           {role === "Employee" && (
