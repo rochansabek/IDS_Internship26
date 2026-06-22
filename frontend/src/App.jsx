@@ -9,6 +9,7 @@ import TicketDetail from "./pages/TicketDetail";
 import MyTickets from "./pages/MyTickets";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
+import Reports from "./pages/Reports";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./components/AppLayout";
@@ -28,6 +29,17 @@ function App() {
             <ProtectedRoute>
               <AppLayout>
                 <Dashboard />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Reports />
               </AppLayout>
             </ProtectedRoute>
           }
