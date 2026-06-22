@@ -13,6 +13,8 @@ import {
   MoreVertical,
   Upload,
   Download,
+  Sparkles,
+  Lightbulb,
 } from "lucide-react";
 import {
   getTicket,
@@ -23,12 +25,15 @@ import {
   getTicketActivities,
   uploadAttachment,
   getAttachments,
+  summarizeTicket,
+  getTroubleshootingSuggestions,
 } from "../api/api";
 
 const statuses = ["Open", "Assigned", "In Progress", "Resolved", "Closed"];
 
 const getPriorityColor = (priority) => {
-  if (priority === "Critical") return "bg-destructive text-destructive-foreground";
+  if (priority === "Critical")
+    return "bg-destructive text-destructive-foreground";
   if (priority === "High") return "bg-chart-4 text-white";
   if (priority === "Medium") return "bg-chart-1 text-white";
   if (priority === "Low") return "bg-chart-2 text-white";
@@ -37,10 +42,14 @@ const getPriorityColor = (priority) => {
 
 const getStatusColor = (status) => {
   if (status === "Open") return "bg-chart-1/10 text-chart-1 border-chart-1/20";
-  if (status === "Assigned") return "bg-primary/10 text-primary border-primary/20";
-  if (status === "In Progress") return "bg-chart-4/10 text-chart-4 border-chart-4/20";
-  if (status === "Resolved") return "bg-chart-2/10 text-chart-2 border-chart-2/20";
-  if (status === "Closed") return "bg-muted text-muted-foreground border-border";
+  if (status === "Assigned")
+    return "bg-primary/10 text-primary border-primary/20";
+  if (status === "In Progress")
+    return "bg-chart-4/10 text-chart-4 border-chart-4/20";
+  if (status === "Resolved")
+    return "bg-chart-2/10 text-chart-2 border-chart-2/20";
+  if (status === "Closed")
+    return "bg-muted text-muted-foreground border-border";
   return "bg-muted text-muted-foreground border-border";
 };
 
@@ -66,6 +75,11 @@ export default function TicketDetail() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
+  const [aiSummary, setAiSummary] = useState("");
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+
   const role = localStorage.getItem("ids_role") || "Employee";
 
   const loadTicketData = async () => {
@@ -90,6 +104,46 @@ export default function TicketDetail() {
   useEffect(() => {
     loadTicketData();
   }, [id]);
+
+  async function handleGenerateSummary() {
+    if (!ticket) return;
+
+    try {
+      setSummaryLoading(true);
+
+      const response = await summarizeTicket({
+        title: ticket.title,
+        description: ticket.description,
+      });
+
+      setAiSummary(response.data.summary);
+    } catch (error) {
+      console.error("Failed to generate AI summary", error);
+      alert("Could not generate AI summary.");
+    } finally {
+      setSummaryLoading(false);
+    }
+  }
+
+  async function handleGetTroubleshooting() {
+    if (!ticket) return;
+
+    try {
+      setSuggestionsLoading(true);
+
+      const response = await getTroubleshootingSuggestions({
+        title: ticket.title,
+        description: ticket.description,
+      });
+
+      setAiSuggestions(response.data.suggestions || []);
+    } catch (error) {
+      console.error("Failed to get troubleshooting suggestions", error);
+      alert("Could not get troubleshooting suggestions.");
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  }
 
   const handleStatusChange = async () => {
     if (!selectedStatus) return;
@@ -220,7 +274,9 @@ export default function TicketDetail() {
       id: "comment-" + comment.id,
       type: "comment",
       user: "User " + comment.userId,
-      action: comment.isInternalNote ? "added an internal note" : "added a comment",
+      action: comment.isInternalNote
+        ? "added an internal note"
+        : "added a comment",
       comment: comment.message,
       time: formatDate(comment.createdAt),
       rawTime: comment.createdAt,
@@ -297,7 +353,10 @@ export default function TicketDetail() {
                   {selectedFiles.length > 0 && (
                     <div className="mt-2 space-y-1">
                       {selectedFiles.map((file, index) => (
-                        <p key={index} className="text-xs text-muted-foreground">
+                        <p
+                          key={index}
+                          className="text-xs text-muted-foreground"
+                        >
                           Selected: {file.name}
                         </p>
                       ))}
@@ -360,7 +419,9 @@ export default function TicketDetail() {
 
             <div className="space-y-6">
               {timeline.length === 0 && (
-                <p className="text-sm text-muted-foreground">No activity yet.</p>
+                <p className="text-sm text-muted-foreground">
+                  No activity yet.
+                </p>
               )}
 
               {timeline.map((item, index) => (
@@ -447,7 +508,66 @@ export default function TicketDetail() {
           </div>
         </div>
 
+        {/* RIGHT SIDEBAR */}
         <div className="space-y-6">
+          <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold">AI Assistant</h3>
+            </div>
+
+            <p className="text-sm text-muted-foreground">
+              Generate a summary and troubleshooting suggestions for this
+              ticket.
+            </p>
+
+            <button
+              onClick={handleGenerateSummary}
+              disabled={summaryLoading}
+              className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-60"
+            >
+              {summaryLoading ? "Generating Summary..." : "Generate Summary"}
+            </button>
+
+            {aiSummary && (
+              <div className="p-4 bg-accent border border-border rounded-lg">
+                <div className="text-sm font-medium mb-2">AI Summary</div>
+                <p className="text-sm text-muted-foreground">{aiSummary}</p>
+              </div>
+            )}
+
+            <button
+              onClick={handleGetTroubleshooting}
+              disabled={suggestionsLoading}
+              className="w-full px-4 py-2 bg-accent text-foreground rounded-lg hover:bg-accent/80 transition-colors disabled:opacity-60"
+            >
+              {suggestionsLoading
+                ? "Getting Suggestions..."
+                : "Get Troubleshooting Suggestions"}
+            </button>
+
+            {aiSuggestions.length > 0 && (
+              <div className="p-4 bg-accent border border-border rounded-lg">
+                <div className="flex items-center gap-2 text-sm font-medium mb-3">
+                  <Lightbulb className="w-4 h-4 text-primary" />
+                  Troubleshooting Suggestions
+                </div>
+
+                <ul className="space-y-2">
+                  {aiSuggestions.map((suggestion, index) => (
+                    <li
+                      key={index}
+                      className="text-sm text-muted-foreground flex gap-2"
+                    >
+                      <span>•</span>
+                      <span>{suggestion}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
           {role !== "Employee" && (
             <div className="bg-card border border-border rounded-xl p-6 space-y-3">
               <h3 className="font-semibold mb-4">Actions</h3>
