@@ -1,6 +1,6 @@
+using backend.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using backend.Data;
 
 namespace backend.Controllers
 {
@@ -15,26 +15,16 @@ namespace backend.Controllers
             _context = context;
         }
 
-        // GET: api/reports/summary
         [HttpGet("summary")]
         public async Task<IActionResult> GetSummary()
         {
             var totalTickets = await _context.Tickets.CountAsync();
 
-            var openTickets = await _context.Tickets
-                .CountAsync(t => t.Status == "Open");
-
-            var assignedTickets = await _context.Tickets
-                .CountAsync(t => t.Status == "Assigned");
-
-            var inProgressTickets = await _context.Tickets
-                .CountAsync(t => t.Status == "In Progress");
-
-            var resolvedTickets = await _context.Tickets
-                .CountAsync(t => t.Status == "Resolved");
-
-            var closedTickets = await _context.Tickets
-                .CountAsync(t => t.Status == "Closed");
+            var openTickets = await _context.Tickets.CountAsync(t => t.Status == "Open");
+            var assignedTickets = await _context.Tickets.CountAsync(t => t.Status == "Assigned");
+            var inProgressTickets = await _context.Tickets.CountAsync(t => t.Status == "In Progress");
+            var resolvedTickets = await _context.Tickets.CountAsync(t => t.Status == "Resolved");
+            var closedTickets = await _context.Tickets.CountAsync(t => t.Status == "Closed");
 
             return Ok(new
             {
@@ -47,7 +37,6 @@ namespace backend.Controllers
             });
         }
 
-        // GET: api/reports/tickets-by-priority
         [HttpGet("tickets-by-priority")]
         public async Task<IActionResult> GetTicketsByPriority()
         {
@@ -55,15 +44,14 @@ namespace backend.Controllers
                 .GroupBy(t => t.Priority)
                 .Select(g => new
                 {
-                    priority = g.Key,
-                    count = g.Count()
+                    name = string.IsNullOrWhiteSpace(g.Key) ? "Unspecified" : g.Key,
+                    value = g.Count()
                 })
                 .ToListAsync();
 
             return Ok(data);
         }
 
-        // GET: api/reports/tickets-by-category
         [HttpGet("tickets-by-category")]
         public async Task<IActionResult> GetTicketsByCategory()
         {
@@ -71,15 +59,14 @@ namespace backend.Controllers
                 .GroupBy(t => t.Category)
                 .Select(g => new
                 {
-                    category = g.Key,
-                    count = g.Count()
+                    name = string.IsNullOrWhiteSpace(g.Key) ? "Unspecified" : g.Key,
+                    value = g.Count()
                 })
                 .ToListAsync();
 
             return Ok(data);
         }
 
-        // GET: api/reports/tickets-by-status
         [HttpGet("tickets-by-status")]
         public async Task<IActionResult> GetTicketsByStatus()
         {
@@ -87,7 +74,7 @@ namespace backend.Controllers
                 .GroupBy(t => t.Status)
                 .Select(g => new
                 {
-                    status = g.Key,
+                    name = string.IsNullOrWhiteSpace(g.Key) ? "Unspecified" : g.Key,
                     count = g.Count()
                 })
                 .ToListAsync();
@@ -95,11 +82,10 @@ namespace backend.Controllers
             return Ok(data);
         }
 
-        // GET: api/reports/monthly-trend
         [HttpGet("monthly-trend")]
         public async Task<IActionResult> GetMonthlyTrend()
         {
-            var data = await _context.Tickets
+            var rawData = await _context.Tickets
                 .GroupBy(t => new
                 {
                     t.CreatedAt.Year,
@@ -107,17 +93,25 @@ namespace backend.Controllers
                 })
                 .Select(g => new
                 {
-                    month = $"{g.Key.Month}/{g.Key.Year}",
+                    year = g.Key.Year,
+                    monthNumber = g.Key.Month,
                     tickets = g.Count(),
-                    resolved = g.Count(x => x.Status == "Resolved" || x.Status == "Closed")
+                    resolved = g.Count(t => t.Status == "Resolved" || t.Status == "Closed")
                 })
-                .OrderBy(x => x.month)
+                .OrderBy(x => x.year)
+                .ThenBy(x => x.monthNumber)
                 .ToListAsync();
+
+            var data = rawData.Select(x => new
+            {
+                month = new DateTime(x.year, x.monthNumber, 1).ToString("MMM"),
+                tickets = x.tickets,
+                resolved = x.resolved
+            });
 
             return Ok(data);
         }
 
-        // GET: api/reports/agent-performance
         [HttpGet("agent-performance")]
         public async Task<IActionResult> GetAgentPerformance()
         {
@@ -126,10 +120,9 @@ namespace backend.Controllers
                 .GroupBy(t => t.AssignedAgentId)
                 .Select(g => new
                 {
-                    agentId = g.Key,
-                    ticketsResolved = g.Count(x =>
-                        x.Status == "Resolved" ||
-                        x.Status == "Closed")
+                    name = "Agent " + g.Key,
+                    resolved = g.Count(t => t.Status == "Resolved" || t.Status == "Closed"),
+                    totalAssigned = g.Count()
                 })
                 .ToListAsync();
 

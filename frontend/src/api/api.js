@@ -24,8 +24,7 @@ export const getTicket = (id) => api.get(`/tickets/${id}`);
 
 export const createTicket = (ticket) => api.post("/tickets", ticket);
 
-export const updateTicket = (id, ticket) =>
-  api.put(`/tickets/${id}`, ticket);
+export const updateTicket = (id, ticket) => api.put(`/tickets/${id}`, ticket);
 
 export const deleteTicket = (id) => api.delete(`/tickets/${id}`);
 
@@ -84,8 +83,7 @@ export const getAgents = () => api.get("/users/agents");
 // NOTIFICATIONS
 // =====================
 
-export const getNotifications = () =>
-  api.get("/Notifications");
+export const getNotifications = () => api.get("/Notifications");
 
 export const getUnreadNotificationCount = () =>
   api.get("/Notifications/unread-count");
@@ -103,8 +101,7 @@ export const archiveNotification = (id) =>
 // REPORTS
 // =====================
 
-export const getReportSummary = () =>
-  api.get("/reports/summary");
+export const getReportSummary = () => api.get("/reports/summary");
 
 export const getTicketsByPriority = () =>
   api.get("/reports/tickets-by-priority");
@@ -120,10 +117,6 @@ export const getMonthlyTrend = () =>
 
 export const getAgentPerformance = () =>
   api.get("/reports/agent-performance");
-
-// =====================
-// REPORT EXPORTS
-// =====================
 
 export const exportExcelReport = () =>
   api.get("/reports/export/excel", {
