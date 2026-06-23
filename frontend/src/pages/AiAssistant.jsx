@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Bot, Send, ArrowLeft, Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Bot, Send, Sparkles, User } from "lucide-react";
 import { askAiChatbot } from "../api/api";
 
 function AiAssistant() {
@@ -15,9 +14,9 @@ function AiAssistant() {
   const [loading, setLoading] = useState(false);
 
   async function handleSend() {
-    if (!message.trim()) return;
+    if (!message.trim() || loading) return;
 
-    const userMessage = message;
+    const userMessage = message.trim();
 
     setChat((prev) => [...prev, { role: "user", text: userMessage }]);
     setMessage("");
@@ -43,7 +42,7 @@ function AiAssistant() {
         ...prev,
         {
           role: "assistant",
-          text: "Sorry, I could not process that right now.",
+          text: "Sorry, I could not process that right now. Please try again.",
         },
       ]);
     } finally {
@@ -60,23 +59,16 @@ function AiAssistant() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          to="/dashboard"
-          className="p-2 rounded-lg hover:bg-accent transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
+      <div>
+        <h1 className="text-3xl font-semibold flex items-center gap-2">
+          <Sparkles className="w-7 h-7 text-primary" />
+          AI Assistant
+        </h1>
 
-        <div>
-          <h1 className="text-3xl font-semibold flex items-center gap-2">
-            <Sparkles className="w-7 h-7 text-primary" />
-            AI Assistant
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Ask for help with tickets, priorities, statuses, and troubleshooting.
-          </p>
-        </div>
+        <p className="text-muted-foreground mt-1">
+          Ask for help with tickets, priorities, statuses, reports, and
+          troubleshooting.
+        </p>
       </div>
 
       <div className="bg-card border border-border rounded-xl overflow-hidden">
@@ -88,35 +80,53 @@ function AiAssistant() {
           <div>
             <h2 className="font-semibold">Help Desk AI</h2>
             <p className="text-sm text-muted-foreground">
-              Rule-based assistant for Assignment 6
+              Ask about tickets, exports, statuses, priorities, or common IT
+              issues.
             </p>
           </div>
         </div>
 
         <div className="h-[500px] overflow-y-auto p-6 space-y-4 bg-accent/20">
-          {chat.map((item, index) => (
-            <div
-              key={index}
-              className={
-                "flex " +
-                (item.role === "user" ? "justify-end" : "justify-start")
-              }
-            >
+          {chat.map((item, index) => {
+            const isUser = item.role === "user";
+
+            return (
               <div
-                className={
-                  "max-w-[75%] rounded-xl px-4 py-3 text-sm whitespace-pre-line " +
-                  (item.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card border border-border text-foreground")
-                }
+                key={index}
+                className={"flex gap-3 " + (isUser ? "justify-end" : "")}
               >
-                {item.text}
+                {!isUser && (
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground shrink-0">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                )}
+
+                <div
+                  className={
+                    "max-w-[75%] rounded-xl px-4 py-3 text-sm whitespace-pre-line " +
+                    (isUser
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card border border-border text-foreground")
+                  }
+                >
+                  {item.text}
+                </div>
+
+                {isUser && (
+                  <div className="w-8 h-8 rounded-full bg-accent border border-border flex items-center justify-center shrink-0">
+                    <User className="w-4 h-4" />
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {loading && (
-            <div className="flex justify-start">
+            <div className="flex gap-3 justify-start">
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground shrink-0">
+                <Bot className="w-4 h-4" />
+              </div>
+
               <div className="bg-card border border-border rounded-xl px-4 py-3 text-sm text-muted-foreground">
                 Thinking...
               </div>
@@ -132,17 +142,22 @@ function AiAssistant() {
               onKeyDown={handleKeyDown}
               placeholder="Ask something like: How do I handle a login issue?"
               rows={2}
-              className="flex-1 px-4 py-3 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+              disabled={loading}
+              className="flex-1 px-4 py-3 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none disabled:opacity-60"
             />
 
             <button
               onClick={handleSend}
-              disabled={loading}
+              disabled={loading || !message.trim()}
               className="px-5 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-60"
             >
               <Send className="w-5 h-5" />
             </button>
           </div>
+
+          <p className="text-xs text-muted-foreground mt-2">
+            Press Enter to send. Press Shift + Enter for a new line.
+          </p>
         </div>
       </div>
     </div>

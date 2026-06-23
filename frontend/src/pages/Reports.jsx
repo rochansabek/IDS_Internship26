@@ -21,6 +21,8 @@ import {
   Clock,
   Users,
   Target,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 
 import {
@@ -44,6 +46,10 @@ function Reports() {
   const [statusData, setStatusData] = useState([]);
   const [agentPerformance, setAgentPerformance] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [exportingExcel, setExportingExcel] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportMessage, setExportMessage] = useState(null);
 
   useEffect(() => {
     loadReports();
@@ -82,8 +88,19 @@ function Reports() {
     }
   }
 
+  function showExportMessage(type, text) {
+    setExportMessage({ type, text });
+
+    setTimeout(() => {
+      setExportMessage(null);
+    }, 3500);
+  }
+
   async function handleExportExcel() {
     try {
+      setExportingExcel(true);
+      setExportMessage(null);
+
       const response = await exportExcelReport();
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -96,14 +113,21 @@ function Reports() {
       link.remove();
 
       window.URL.revokeObjectURL(url);
+
+      showExportMessage("success", "Excel report downloaded successfully.");
     } catch (error) {
       console.error("Failed to export Excel report:", error);
-      alert("Failed to export Excel report.");
+      showExportMessage("error", "Failed to export Excel report.");
+    } finally {
+      setExportingExcel(false);
     }
   }
 
   async function handleExportPdf() {
     try {
+      setExportingPdf(true);
+      setExportMessage(null);
+
       const response = await exportPdfReport();
 
       const url = window.URL.createObjectURL(
@@ -118,9 +142,13 @@ function Reports() {
       link.remove();
 
       window.URL.revokeObjectURL(url);
+
+      showExportMessage("success", "PDF report downloaded successfully.");
     } catch (error) {
       console.error("Failed to export PDF report:", error);
-      alert("Failed to export PDF report.");
+      showExportMessage("error", "Failed to export PDF report.");
+    } finally {
+      setExportingPdf(false);
     }
   }
 
@@ -169,7 +197,6 @@ function Reports() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold">Reports & Analytics</h1>
@@ -186,23 +213,42 @@ function Reports() {
 
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+            disabled={exportingExcel || exportingPdf}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-60"
           >
             <Download className="w-5 h-5" />
-            <span>Export Excel</span>
+            <span>{exportingExcel ? "Exporting..." : "Export Excel"}</span>
           </button>
 
           <button
             onClick={handleExportPdf}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+            disabled={exportingExcel || exportingPdf}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-60"
           >
             <Download className="w-5 h-5" />
-            <span>Export PDF</span>
+            <span>{exportingPdf ? "Exporting..." : "Export PDF"}</span>
           </button>
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {exportMessage && (
+        <div
+          className={
+            "flex items-center gap-2 border rounded-xl px-4 py-3 text-sm " +
+            (exportMessage.type === "success"
+              ? "bg-green-500/10 border-green-500/20 text-green-700"
+              : "bg-destructive/10 border-destructive/20 text-destructive")
+          }
+        >
+          {exportMessage.type === "success" ? (
+            <CheckCircle className="w-4 h-4" />
+          ) : (
+            <AlertCircle className="w-4 h-4" />
+          )}
+          <span>{exportMessage.text}</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {kpiData.map((kpi) => {
           const Icon = kpi.icon;
@@ -233,7 +279,6 @@ function Reports() {
         })}
       </div>
 
-      {/* Monthly Ticket Trends */}
       <div className="bg-card border border-border rounded-xl p-6">
         <h2 className="text-xl font-semibold mb-6">Monthly Ticket Trends</h2>
 
@@ -280,7 +325,6 @@ function Reports() {
         )}
       </div>
 
-      {/* Status and Category Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-card border border-border rounded-xl p-6">
           <h2 className="text-xl font-semibold mb-6">Tickets by Status</h2>
@@ -333,7 +377,6 @@ function Reports() {
         </div>
       </div>
 
-      {/* Priority Chart */}
       <div className="bg-card border border-border rounded-xl p-6">
         <h2 className="text-xl font-semibold mb-6">Tickets by Priority</h2>
 
@@ -352,7 +395,6 @@ function Reports() {
         )}
       </div>
 
-      {/* Agent Performance */}
       <div className="bg-card border border-border rounded-xl p-6">
         <h2 className="text-xl font-semibold mb-6">Agent Performance</h2>
 
