@@ -21,7 +21,6 @@ namespace backend.Controllers
         public IActionResult CategorizeTicket([FromBody] TicketAiRequest request)
         {
             var text = $"{request.Title} {request.Description}".ToLower();
-
             string category = "General";
 
             if (ContainsAny(text, "password", "login", "account", "locked", "access", "sign in", "signin"))
@@ -52,7 +51,6 @@ namespace backend.Controllers
         public IActionResult DetectPriority([FromBody] TicketAiRequest request)
         {
             var text = $"{request.Title} {request.Description}".ToLower();
-
             string priority = "Medium";
 
             if (ContainsAny(text, "urgent", "critical", "system down", "server down", "cannot work", "blocked completely", "production down"))
@@ -80,17 +78,13 @@ namespace backend.Controllers
                 $"The user reported: \"{request.Title}\". " +
                 $"Details provided: {request.Description}";
 
-            return Ok(new
-            {
-                summary
-            });
+            return Ok(new { summary });
         }
 
         [HttpPost("troubleshooting-suggestions")]
         public IActionResult TroubleshootingSuggestions([FromBody] TicketAiRequest request)
         {
             var text = $"{request.Title} {request.Description}".ToLower();
-
             List<string> suggestions = new();
 
             if (ContainsAny(text, "password", "login", "account", "locked", "sign in", "signin", "access"))
@@ -157,38 +151,66 @@ namespace backend.Controllers
                 suggestions.Add("Assign the ticket to the most relevant support agent.");
             }
 
-            return Ok(new
-            {
-                suggestions
-            });
+            return Ok(new { suggestions });
         }
 
         [HttpPost("chatbot")]
         public IActionResult Chatbot([FromBody] ChatbotRequest request)
         {
-            var message = request.Message.ToLower();
+            var message = request.Message.ToLower().Trim();
 
             string reply;
 
-            if (ContainsAny(message, "create ticket", "new ticket", "submit ticket"))
-                reply = "To create a ticket, go to Create Ticket, enter the title, description, category, and priority, optionally attach files, then submit.";
-            else if (ContainsAny(message, "status", "open", "resolved", "closed"))
-                reply = "Ticket statuses include Open, Assigned, In Progress, Resolved, and Closed.";
-            else if (ContainsAny(message, "priority", "critical", "high", "medium", "low"))
-                reply = "Priorities are Low, Medium, High, and Critical. Critical means the issue blocks work or affects many users.";
-            else if (ContainsAny(message, "attachment", "upload", "file"))
-                reply = "You can upload screenshots or documents as attachments when creating or viewing a ticket.";
-            else if (ContainsAny(message, "password", "login", "account"))
-                reply = "For login issues, check the username, account status, and password reset flow first.";
-            else if (ContainsAny(message, "network", "wifi", "internet"))
-                reply = "For network issues, check whether one user or many users are affected, then test Wi-Fi, VPN, and connectivity.";
-            else
-                reply = "I can help with ticket creation, statuses, priorities, attachments, login issues, network issues, and troubleshooting steps.";
-
-            return Ok(new
+            if (string.IsNullOrWhiteSpace(message))
             {
-                reply
-            });
+                reply = "You can ask me about creating tickets, priorities, statuses, attachments, login issues, network issues, reports, or troubleshooting steps.";
+            }
+            else if (ContainsAny(message, "hello", "hi", "hey", "good morning", "good afternoon", "good evening"))
+            {
+                reply = "Hi! How can I help you today?";
+            }
+            else if (ContainsAny(message, "create", "new ticket", "submit", "open ticket", "report issue"))
+            {
+                reply = "To create a ticket, go to Create Ticket, enter a clear title, describe the issue, choose or accept the AI-suggested category and priority, attach files if needed, then submit.";
+            }
+            else if (ContainsAny(message, "attachment", "attachments", "upload", "file", "files", "screenshot", "document", "pdf"))
+            {
+                reply = "Attachments let users upload screenshots, PDFs, or documents to support a ticket. You can attach files while creating a ticket or from the ticket details page.";
+            }
+            else if (ContainsAny(message, "priority", "priorities", "critical", "high", "medium", "low"))
+            {
+                reply = "Ticket priorities are Low, Medium, High, and Critical. Critical is used when the issue blocks work or affects many users.";
+            }
+            else if (ContainsAny(message, "status", "statuses", "open", "assigned", "progress", "resolved", "closed"))
+            {
+                reply = "Ticket statuses are Open, Assigned, In Progress, Resolved, and Closed. They show where the ticket is in the support workflow.";
+            }
+            else if (ContainsAny(message, "login", "password", "account", "access", "sign in", "signin"))
+            {
+                reply = "For login or account access issues, first confirm the username or email, check whether the account is active, then try a password reset.";
+            }
+            else if (ContainsAny(message, "network", "wifi", "wi-fi", "internet", "connection", "vpn", "router"))
+            {
+                reply = "For network issues, check whether one user or multiple users are affected, test Wi-Fi or VPN, and verify the connection before escalating.";
+            }
+            else if (ContainsAny(message, "summary", "summarize"))
+            {
+                reply = "The AI summary feature reads the ticket title and description, then generates a short explanation of the main issue.";
+            }
+            else if (ContainsAny(message, "troubleshooting", "suggestions", "fix", "solve", "steps"))
+            {
+                reply = "Troubleshooting suggestions give support agents possible next steps based on the ticket description, such as checking account access, network settings, software errors, or attachments.";
+            }
+            else if (ContainsAny(message, "reports", "analytics", "export", "excel", "pdf"))
+            {
+                reply = "The Reports page shows ticket analytics, charts, KPI cards, and lets you export ticket reports as Excel or PDF files.";
+            }
+            else
+            {
+                reply = "I can help with creating tickets, attachments, statuses, priorities, login issues, network issues, reports, AI summaries, and troubleshooting suggestions. Try asking: 'How do I create a ticket?'";
+            }
+
+            return Ok(new { reply });
         }
 
         private static string DetectCategoryText(string title, string description)

@@ -8,7 +8,8 @@ function AiAssistant() {
   const [chat, setChat] = useState([
     {
       role: "assistant",
-      text: "Hi! I can help with tickets, priorities, attachments, login issues, network issues, and troubleshooting steps.",
+      text:
+        "👋 Hello! Welcome to the IDS Help Desk AI Assistant.\n\nI can help with tickets, priorities, statuses, attachments, reports, login issues, network issues, and troubleshooting.\n\nHow can I help you today?",
     },
   ]);
   const [loading, setLoading] = useState(false);
@@ -97,12 +98,13 @@ function AiAssistant() {
             <div
               key={index}
               className={
-                "flex " + (item.role === "user" ? "justify-end" : "justify-start")
+                "flex " +
+                (item.role === "user" ? "justify-end" : "justify-start")
               }
             >
               <div
                 className={
-                  "max-w-[75%] rounded-xl px-4 py-3 text-sm " +
+                  "max-w-[75%] rounded-xl px-4 py-3 text-sm whitespace-pre-line " +
                   (item.role === "user"
                     ? "bg-primary text-primary-foreground"
                     : "bg-card border border-border text-foreground")
