@@ -1,7 +1,20 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Upload, X, FileText, ArrowLeft } from "lucide-react";
-import { createTicket, uploadAttachment } from "../api/api";
+import {
+  Upload,
+  X,
+  FileText,
+  ArrowLeft,
+  Sparkles,
+  CheckCircle,
+} from "lucide-react";
+
+import {
+  createTicket,
+  uploadAttachment,
+  categorizeTicket,
+  detectPriority,
+} from "../api/api";
 
 export default function CreateTicket() {
   const navigate = useNavigate();
@@ -16,6 +29,52 @@ export default function CreateTicket() {
   const [files, setFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState(null);
+
+  async function handleAnalyzeWithAI() {
+    if (!formData.title.trim() || !formData.description.trim()) {
+      alert("Please enter a title and description before using AI.");
+      return;
+    }
+
+    try {
+      setIsAnalyzing(true);
+
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+      };
+
+      const [categoryRes, priorityRes] = await Promise.all([
+        categorizeTicket(payload),
+        detectPriority(payload),
+      ]);
+
+      setAiSuggestions({
+        category: categoryRes.data.category,
+        categoryReason: categoryRes.data.reason,
+        priority: priorityRes.data.priority,
+        priorityReason: priorityRes.data.reason,
+      });
+    } catch (error) {
+      console.error(error);
+      alert("AI analysis failed. Please try again.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }
+
+  function applyAiSuggestions() {
+    if (!aiSuggestions) return;
+
+    setFormData({
+      ...formData,
+      category: aiSuggestions.category,
+      priority: aiSuggestions.priority,
+    });
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -107,6 +166,88 @@ export default function CreateTicket() {
             />
           </div>
 
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">
+              Description <span className="text-destructive">*</span>
+            </label>
+
+            <textarea
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              placeholder="Provide detailed information about the issue..."
+              rows={6}
+              className="w-full px-4 py-3 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+              required
+            />
+
+            <p className="text-xs text-muted-foreground">
+              Please include error messages, steps to reproduce, and expected
+              behavior.
+            </p>
+          </div>
+
+          <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  AI Ticket Analysis
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Let AI suggest the best category and priority.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAnalyzeWithAI}
+                disabled={isAnalyzing}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-60"
+              >
+                {isAnalyzing ? "Analyzing..." : "Analyze with AI"}
+              </button>
+            </div>
+
+            {aiSuggestions && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground">
+                    Suggested Category
+                  </p>
+                  <p className="text-xl font-semibold mt-1">
+                    {aiSuggestions.category}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {aiSuggestions.categoryReason}
+                  </p>
+                </div>
+
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground">
+                    Suggested Priority
+                  </p>
+                  <p className="text-xl font-semibold mt-1">
+                    {aiSuggestions.priority}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {aiSuggestions.priorityReason}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={applyAiSuggestions}
+                  className="md:col-span-2 flex items-center justify-center gap-2 px-4 py-2 bg-accent text-foreground rounded-lg hover:bg-accent/80 transition-colors"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  Apply AI Suggestions
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="block text-sm font-medium">
@@ -122,12 +263,16 @@ export default function CreateTicket() {
                 required
               >
                 <option value="">Select a category</option>
+                <option value="Authentication">Authentication</option>
                 <option value="Hardware">Hardware</option>
                 <option value="Software">Software</option>
                 <option value="Network">Network</option>
                 <option value="Email">Email</option>
                 <option value="Account Access">Account Access</option>
+                <option value="Payment">Payment</option>
                 <option value="Performance">Performance</option>
+                <option value="Feature Request">Feature Request</option>
+                <option value="General">General</option>
                 <option value="Other">Other</option>
               </select>
             </div>
@@ -151,28 +296,6 @@ export default function CreateTicket() {
                 <option value="Critical">Critical</option>
               </select>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">
-              Description <span className="text-destructive">*</span>
-            </label>
-
-            <textarea
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              placeholder="Provide detailed information about the issue..."
-              rows={6}
-              className="w-full px-4 py-3 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-              required
-            />
-
-            <p className="text-xs text-muted-foreground">
-              Please include any relevant error messages, steps to reproduce,
-              and expected behavior.
-            </p>
           </div>
 
           <div className="space-y-2">
@@ -276,16 +399,12 @@ export default function CreateTicket() {
         </h3>
 
         <p className="text-sm text-muted-foreground mb-4">
-          For critical issues, you can reach our support team directly at{" "}
+          For critical issues, contact{" "}
           <a
             href="mailto:support@helpdesk.com"
             className="text-primary hover:underline"
           >
             support@helpdesk.com
-          </a>{" "}
-          or call us at{" "}
-          <a href="tel:+1-800-123-4567" className="text-primary hover:underline">
-            +1 (800) 123-4567
           </a>
         </p>
       </div>

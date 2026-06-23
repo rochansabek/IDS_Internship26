@@ -24,7 +24,8 @@ export const getTicket = (id) => api.get(`/tickets/${id}`);
 
 export const createTicket = (ticket) => api.post("/tickets", ticket);
 
-export const updateTicket = (id, ticket) => api.put(`/tickets/${id}`, ticket);
+export const updateTicket = (id, ticket) =>
+  api.put(`/tickets/${id}`, ticket);
 
 export const deleteTicket = (id) => api.delete(`/tickets/${id}`);
 
@@ -86,6 +87,9 @@ export const getAgents = () => api.get("/users/agents");
 export const getNotifications = () =>
   api.get("/Notifications");
 
+export const getArchivedNotifications = () =>
+  api.get("/Notifications/archived");
+
 export const getUnreadNotificationCount = () =>
   api.get("/Notifications/unread-count");
 
@@ -97,3 +101,57 @@ export const markAllNotificationsAsRead = () =>
 
 export const archiveNotification = (id) =>
   api.put(`/Notifications/${id}/archive`);
+
+export const unarchiveNotification = (id) =>
+  api.put(`/Notifications/${id}/unarchive`);
+
+// =====================
+// REPORTS
+// =====================
+
+export const getReportSummary = () =>
+  api.get("/reports/summary");
+
+export const getTicketsByPriority = () =>
+  api.get("/reports/tickets-by-priority");
+
+export const getTicketsByCategory = () =>
+  api.get("/reports/tickets-by-category");
+
+export const getTicketsByStatus = () =>
+  api.get("/reports/tickets-by-status");
+
+export const getMonthlyTrend = () =>
+  api.get("/reports/monthly-trend");
+
+export const getAgentPerformance = () =>
+  api.get("/reports/agent-performance");
+
+export const exportExcelReport = () =>
+  api.get("/reports/export/excel", {
+    responseType: "blob",
+  });
+
+export const exportPdfReport = () =>
+  api.get("/reports/export/pdf", {
+    responseType: "blob",
+  });
+
+// =====================
+// AI
+// =====================
+
+export const categorizeTicket = (data) =>
+  api.post("/ai/categorize-ticket", data);
+
+export const detectPriority = (data) =>
+  api.post("/ai/detect-priority", data);
+
+export const summarizeTicket = (data) =>
+  api.post("/ai/summarize-ticket", data);
+
+export const getTroubleshootingSuggestions = (data) =>
+  api.post("/ai/troubleshooting-suggestions", data);
+
+export const askAiChatbot = (data) =>
+  api.post("/ai/chatbot", data);

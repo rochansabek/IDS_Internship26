@@ -5,22 +5,24 @@ import {
   CheckCircle,
   AlertCircle,
   Archive,
+  ArchiveRestore,
   ArrowLeft,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   getNotifications,
+  getArchivedNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
   archiveNotification,
+  unarchiveNotification,
 } from "../api/api";
 
 function getNotificationIcon(message) {
   const text = message.toLowerCase();
 
   if (text.includes("comment")) return MessageSquare;
-  if (text.includes("resolved") || text.includes("closed"))
-    return CheckCircle;
+  if (text.includes("resolved") || text.includes("closed")) return CheckCircle;
   if (text.includes("critical")) return AlertCircle;
 
   return Ticket;
@@ -63,12 +65,21 @@ function formatDate(value) {
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState([]);
+  const [archivedNotifications, setArchivedNotifications] = useState([]);
+  const [activeTab, setActiveTab] = useState("active");
   const [loading, setLoading] = useState(true);
 
   async function loadNotifications() {
     try {
-      const response = await getNotifications();
-      setNotifications(response.data);
+      setLoading(true);
+
+      const [activeRes, archivedRes] = await Promise.all([
+        getNotifications(),
+        getArchivedNotifications(),
+      ]);
+
+      setNotifications(activeRes.data);
+      setArchivedNotifications(archivedRes.data);
     } catch (error) {
       console.error("Could not load notifications", error);
     } finally {
@@ -95,11 +106,17 @@ export default function Notifications() {
     await loadNotifications();
   }
 
+  async function handleUnarchive(id) {
+    await unarchiveNotification(id);
+    await loadNotifications();
+  }
+
   const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const displayedNotifications =
+    activeTab === "archived" ? archivedNotifications : notifications;
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
@@ -119,11 +136,39 @@ export default function Notifications() {
           </div>
         </div>
 
+        {activeTab === "active" && (
+          <button
+            onClick={handleMarkAllAsRead}
+            className="px-4 py-2 text-sm text-primary hover:bg-accent rounded-lg transition-colors"
+          >
+            Mark all as read
+          </button>
+        )}
+      </div>
+
+      <div className="flex gap-2 bg-card border border-border rounded-xl p-2 w-fit">
         <button
-          onClick={handleMarkAllAsRead}
-          className="px-4 py-2 text-sm text-primary hover:bg-accent rounded-lg transition-colors"
+          onClick={() => setActiveTab("active")}
+          className={
+            "px-4 py-2 rounded-lg text-sm transition-colors " +
+            (activeTab === "active"
+              ? "bg-primary text-primary-foreground"
+              : "hover:bg-accent")
+          }
         >
-          Mark all as read
+          Active ({notifications.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab("archived")}
+          className={
+            "px-4 py-2 rounded-lg text-sm transition-colors " +
+            (activeTab === "archived"
+              ? "bg-primary text-primary-foreground"
+              : "hover:bg-accent")
+          }
+        >
+          Archived ({archivedNotifications.length})
         </button>
       </div>
 
@@ -131,7 +176,7 @@ export default function Notifications() {
         <div className="bg-card border border-border rounded-xl p-6">
           <p className="text-muted-foreground">Loading notifications...</p>
         </div>
-      ) : notifications.length === 0 ? (
+      ) : displayedNotifications.length === 0 ? (
         <div className="bg-card border border-border rounded-xl p-12">
           <div className="flex flex-col items-center text-center">
             <div className="p-4 bg-muted rounded-full mb-4">
@@ -139,17 +184,21 @@ export default function Notifications() {
             </div>
 
             <h3 className="text-xl font-semibold mb-2">
-              All caught up!
+              {activeTab === "archived"
+                ? "No archived notifications"
+                : "All caught up!"}
             </h3>
 
             <p className="text-muted-foreground">
-              You do not have any notifications at the moment.
+              {activeTab === "archived"
+                ? "Archived notifications will appear here."
+                : "You do not have any notifications at the moment."}
             </p>
           </div>
         </div>
       ) : (
         <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
-          {notifications.map((notification) => {
+          {displayedNotifications.map((notification) => {
             const Icon = getNotificationIcon(notification.message);
             const style = getIconStyle(notification.message);
 
@@ -158,24 +207,20 @@ export default function Notifications() {
                 key={notification.id}
                 className={
                   "flex gap-4 p-5 hover:bg-accent/50 transition-colors " +
-                  (!notification.isRead ? "bg-accent/30" : "")
+                  (!notification.isRead && activeTab === "active"
+                    ? "bg-accent/30"
+                    : "")
                 }
               >
-                <div
-                  className={
-                    "p-3 rounded-full shrink-0 " + style.bgColor
-                  }
-                >
+                <div className={"p-3 rounded-full shrink-0 " + style.bgColor}>
                   <Icon className={"w-5 h-5 " + style.color} />
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4 mb-1">
-                    <h3 className="font-medium">
-                      {notification.message}
-                    </h3>
+                    <h3 className="font-medium">{notification.message}</h3>
 
-                    {!notification.isRead && (
+                    {!notification.isRead && activeTab === "active" && (
                       <div className="w-2 h-2 bg-primary rounded-full shrink-0 mt-2" />
                     )}
                   </div>
@@ -191,26 +236,32 @@ export default function Notifications() {
                   </p>
 
                   <div className="flex gap-2 mt-3">
-                    {!notification.isRead && (
+                    {activeTab === "active" && !notification.isRead && (
                       <button
-                        onClick={() =>
-                          handleMarkAsRead(notification.id)
-                        }
+                        onClick={() => handleMarkAsRead(notification.id)}
                         className="text-xs px-3 py-1 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
                       >
                         Mark Read
                       </button>
                     )}
 
-                    <button
-                      onClick={() =>
-                        handleArchive(notification.id)
-                      }
-                      className="flex items-center gap-1 text-xs px-3 py-1 border border-border rounded-lg hover:bg-accent transition-colors"
-                    >
-                      <Archive className="w-3 h-3" />
-                      Archive
-                    </button>
+                    {activeTab === "active" ? (
+                      <button
+                        onClick={() => handleArchive(notification.id)}
+                        className="flex items-center gap-1 text-xs px-3 py-1 border border-border rounded-lg hover:bg-accent transition-colors"
+                      >
+                        <Archive className="w-3 h-3" />
+                        Archive
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleUnarchive(notification.id)}
+                        className="flex items-center gap-1 text-xs px-3 py-1 border border-border rounded-lg hover:bg-accent transition-colors"
+                      >
+                        <ArchiveRestore className="w-3 h-3" />
+                        Unarchive
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
