@@ -1,15 +1,37 @@
-import { useState } from "react";
-import { User, Mail, Building, MapPin, Phone, Lock, Save } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  User,
+  Mail,
+  Building,
+  MapPin,
+  Phone,
+  Lock,
+  Save,
+  Camera,
+} from "lucide-react";
+import {
+  getUserById,
+  updateUserProfile,
+  changeUserPassword,
+} from "../api/api";
 
 function Profile() {
-  const savedName = localStorage.getItem("ids_name") || "User";
-  const savedRole = localStorage.getItem("ids_role") || "Employee";
-  const savedEmail = localStorage.getItem("ids_email") || "user@helpdesk.com";
+  const fileInputRef = useRef(null);
+  const userId = localStorage.getItem("ids_userId");
+
+  const [loading, setLoading] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState("");
+
+  const [modal, setModal] = useState({
+    show: false,
+    title: "",
+    message: "",
+  });
 
   const [formData, setFormData] = useState({
-    name: savedName,
-    email: savedEmail,
-    role: savedRole,
+    fullName: "",
+    email: "",
+    role: "Employee",
     company: "IDS",
     location: "",
     phone: "",
@@ -17,50 +39,130 @@ function Profile() {
   });
 
   const [passwordData, setPasswordData] = useState({
-    current: "",
+    currentPassword: "",
     newPassword: "",
-    confirm: "",
+    confirmPassword: "",
   });
 
-  function getInitials(name) {
-    if (!name || name.trim() === "") {
-      return "U";
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  function showModal(title, message) {
+    setModal({
+      show: true,
+      title,
+      message,
+    });
+  }
+
+  function closeModal() {
+    setModal({
+      show: false,
+      title: "",
+      message: "",
+    });
+  }
+
+  async function loadProfile() {
+    try {
+      const response = await getUserById(userId);
+      const user = response.data;
+
+      setFormData({
+        fullName: user.fullName || "",
+        email: user.email || "",
+        role: user.role || "Employee",
+        company: user.company || "IDS",
+        location: user.location || "",
+        phone: user.phone || "",
+        bio: user.bio || "",
+      });
+
+      setAvatarUrl(user.avatarUrl || "");
+    } catch {
+      showModal("Profile Error", "Could not load profile.");
+    } finally {
+      setLoading(false);
     }
+  }
+
+  function getInitials(name) {
+    if (!name || name.trim() === "") return "U";
 
     const parts = name.trim().split(" ");
-
-    if (parts.length === 1) {
-      return parts[0][0].toUpperCase();
-    }
+    if (parts.length === 1) return parts[0][0].toUpperCase();
 
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
-  function handleProfileSave(e) {
-    e.preventDefault();
+  function handleAvatarChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
 
-    localStorage.setItem("ids_name", formData.name);
-    localStorage.setItem("ids_email", formData.email);
-    localStorage.setItem("ids_role", formData.role);
+    const reader = new FileReader();
 
-    alert("Profile updated successfully!");
+    reader.onloadend = () => {
+      setAvatarUrl(reader.result);
+    };
+
+    reader.readAsDataURL(file);
   }
 
-  function handlePasswordChange(e) {
+  async function handleProfileSave(e) {
     e.preventDefault();
 
-    if (passwordData.newPassword !== passwordData.confirm) {
-      alert("New passwords do not match.");
+    try {
+      await updateUserProfile(userId, {
+        ...formData,
+        avatarUrl,
+      });
+
+      localStorage.setItem("ids_name", formData.fullName);
+      localStorage.setItem("ids_email", formData.email);
+      localStorage.setItem("ids_role", formData.role);
+
+      showModal("Profile Updated", "Your profile was updated successfully.");
+    } catch (error) {
+      showModal(
+        "Profile Error",
+        error.response?.data || "Could not update profile."
+      );
+    }
+  }
+
+  async function handlePasswordChange(e) {
+    e.preventDefault();
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      showModal("Password Error", "New passwords do not match.");
       return;
     }
 
-    alert("Password changed successfully!");
+    if (passwordData.newPassword.length < 6) {
+      showModal("Password Error", "Password must be at least 6 characters.");
+      return;
+    }
 
-    setPasswordData({
-      current: "",
-      newPassword: "",
-      confirm: "",
-    });
+    try {
+      await changeUserPassword(userId, {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+
+      showModal("Password Updated", "Your password was changed successfully.");
+    } catch (error) {
+      showModal(
+        "Password Error",
+        error.response?.data || "Could not change password."
+      );
+    }
   }
 
   const stats = [
@@ -69,6 +171,10 @@ function Profile() {
     { label: "Resolved Tickets", value: "0" },
     { label: "Role", value: formData.role },
   ];
+
+  if (loading) {
+    return <div className="p-6 text-muted-foreground">Loading profile...</div>;
+  }
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -81,12 +187,22 @@ function Profile() {
 
       <div className="bg-card border border-border rounded-xl p-6">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-          <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-4xl font-semibold">
-            {getInitials(formData.name)}
+          <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-4xl font-semibold overflow-hidden">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Avatar"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              getInitials(formData.fullName)
+            )}
           </div>
 
           <div className="flex-1">
-            <h2 className="text-2xl font-semibold mb-1">{formData.name}</h2>
+            <h2 className="text-2xl font-semibold mb-1">
+              {formData.fullName}
+            </h2>
             <p className="text-muted-foreground mb-4">{formData.role}</p>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -101,7 +217,20 @@ function Profile() {
             </div>
           </div>
 
-          <button className="px-4 py-2 bg-accent text-foreground rounded-lg hover:bg-accent/80 transition-colors">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            className="hidden"
+          />
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current.click()}
+            className="flex items-center gap-2 px-4 py-2 bg-accent text-foreground rounded-lg hover:bg-accent/80 transition-colors"
+          >
+            <Camera className="w-5 h-5" />
             Change Avatar
           </button>
         </div>
@@ -112,94 +241,51 @@ function Profile() {
 
         <form onSubmit={handleProfileSave} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">Full Name</label>
+            <InputField
+              label="Full Name"
+              icon={User}
+              value={formData.fullName}
+              onChange={(value) =>
+                setFormData({ ...formData, fullName: value })
+              }
+            />
 
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <InputField
+              label="Email"
+              icon={Mail}
+              type="email"
+              value={formData.email}
+              onChange={(value) => setFormData({ ...formData, email: value })}
+            />
 
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="w-full pl-11 pr-4 py-3 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
+            <InputField
+              label="Company"
+              icon={Building}
+              value={formData.company}
+              onChange={(value) =>
+                setFormData({ ...formData, company: value })
+              }
+            />
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">Email</label>
+            <InputField
+              label="Location"
+              icon={MapPin}
+              value={formData.location}
+              onChange={(value) =>
+                setFormData({ ...formData, location: value })
+              }
+            />
 
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  className="w-full pl-11 pr-4 py-3 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">Company</label>
-
-              <div className="relative">
-                <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-
-                <input
-                  type="text"
-                  value={formData.company}
-                  onChange={(e) =>
-                    setFormData({ ...formData, company: e.target.value })
-                  }
-                  className="w-full pl-11 pr-4 py-3 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">Location</label>
-
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) =>
-                    setFormData({ ...formData, location: e.target.value })
-                  }
-                  className="w-full pl-11 pr-4 py-3 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">Phone</label>
-
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
-                  className="w-full pl-11 pr-4 py-3 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
+            <InputField
+              label="Phone"
+              icon={Phone}
+              type="tel"
+              value={formData.phone}
+              onChange={(value) => setFormData({ ...formData, phone: value })}
+            />
 
             <div className="space-y-2">
               <label className="block text-sm font-medium">Role</label>
-
               <select
                 value={formData.role}
                 onChange={(e) =>
@@ -208,7 +294,6 @@ function Profile() {
                 className="w-full px-4 py-3 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="Employee">Employee</option>
-                <option value="Agent">Support Agent</option>
                 <option value="Admin">Admin</option>
               </select>
             </div>
@@ -216,7 +301,6 @@ function Profile() {
 
           <div className="space-y-2">
             <label className="block text-sm font-medium">Bio</label>
-
             <textarea
               value={formData.bio}
               onChange={(e) =>
@@ -232,7 +316,7 @@ function Profile() {
             className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
           >
             <Save className="w-5 h-5" />
-            <span>Save Changes</span>
+            Save Changes
           </button>
         </form>
       </div>
@@ -242,69 +326,35 @@ function Profile() {
 
         <form onSubmit={handlePasswordChange} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">
-                Current Password
-              </label>
+            <InputField
+              label="Current Password"
+              icon={Lock}
+              type="password"
+              value={passwordData.currentPassword}
+              onChange={(value) =>
+                setPasswordData({ ...passwordData, currentPassword: value })
+              }
+            />
 
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <InputField
+              label="New Password"
+              icon={Lock}
+              type="password"
+              value={passwordData.newPassword}
+              onChange={(value) =>
+                setPasswordData({ ...passwordData, newPassword: value })
+              }
+            />
 
-                <input
-                  type="password"
-                  value={passwordData.current}
-                  onChange={(e) =>
-                    setPasswordData({
-                      ...passwordData,
-                      current: e.target.value,
-                    })
-                  }
-                  className="w-full pl-11 pr-4 py-3 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">New Password</label>
-
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-
-                <input
-                  type="password"
-                  value={passwordData.newPassword}
-                  onChange={(e) =>
-                    setPasswordData({
-                      ...passwordData,
-                      newPassword: e.target.value,
-                    })
-                  }
-                  className="w-full pl-11 pr-4 py-3 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">
-                Confirm Password
-              </label>
-
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-
-                <input
-                  type="password"
-                  value={passwordData.confirm}
-                  onChange={(e) =>
-                    setPasswordData({
-                      ...passwordData,
-                      confirm: e.target.value,
-                    })
-                  }
-                  className="w-full pl-11 pr-4 py-3 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
+            <InputField
+              label="Confirm Password"
+              icon={Lock}
+              type="password"
+              value={passwordData.confirmPassword}
+              onChange={(value) =>
+                setPasswordData({ ...passwordData, confirmPassword: value })
+              }
+            />
           </div>
 
           <button
@@ -312,9 +362,47 @@ function Profile() {
             className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
           >
             <Lock className="w-5 h-5" />
-            <span>Update Password</span>
+            Update Password
           </button>
         </form>
+      </div>
+
+      {modal.show && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-xl font-semibold mb-2">{modal.title}</h3>
+
+            <p className="text-muted-foreground mb-6">{modal.message}</p>
+
+            <div className="flex justify-end">
+              <button
+                onClick={closeModal}
+                className="px-5 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InputField({ label, icon: Icon, value, onChange, type = "text" }) {
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium">{label}</label>
+
+      <div className="relative">
+        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full pl-11 pr-4 py-3 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+        />
       </div>
     </div>
   );

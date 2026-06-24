@@ -19,13 +19,12 @@ import {
   AlertCircle,
   TrendingUp,
   Plus,
-  LogOut,
   Trash2,
   Pencil,
   Eye,
   Bell,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   getTickets,
   deleteTicket,
@@ -50,7 +49,6 @@ function getStatusColor(status) {
 }
 
 function Dashboard() {
-  const navigate = useNavigate();
   const role = localStorage.getItem("ids_role") || "Employee";
 
   const [tickets, setTickets] = useState([]);
@@ -66,25 +64,25 @@ function Dashboard() {
   }, []);
 
   useEffect(() => {
-  const connection = new signalR.HubConnectionBuilder()
-    .withUrl("http://localhost:5046/notificationHub")
-    .withAutomaticReconnect()
-    .build();
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl("http://localhost:5046/notificationHub")
+      .withAutomaticReconnect()
+      .build();
 
-  connection
-    .start()
-    .then(() => console.log("SignalR connected"))
-    .catch((error) => console.error("SignalR connection failed:", error));
+    connection
+      .start()
+      .then(() => console.log("SignalR connected"))
+      .catch((error) => console.error("SignalR connection failed:", error));
 
-  connection.on("ReceiveNotification", async () => {
-    const notificationResponse = await getUnreadNotificationCount();
-    setUnreadCount(notificationResponse.data);
-  });
+    connection.on("ReceiveNotification", async () => {
+      const notificationResponse = await getUnreadNotificationCount();
+      setUnreadCount(notificationResponse.data);
+    });
 
-  return () => {
-    connection.stop();
-  };
-}, []);
+    return () => {
+      connection.stop();
+    };
+  }, []);
 
   async function loadTickets() {
     try {
@@ -125,15 +123,7 @@ function Dashboard() {
     }
   }
 
-  function logout() {
-    localStorage.removeItem("ids_token");
-    localStorage.removeItem("ids_role");
-    navigate("/login");
-  }
-
   const totalCount = tickets.length;
-
-  const openCount = tickets.filter((ticket) => ticket.status === "Open").length;
 
   const completedCount = tickets.filter(
     (ticket) => ticket.status === "Resolved" || ticket.status === "Closed"
@@ -157,9 +147,14 @@ function Dashboard() {
       name: day,
       tickets: tickets.filter((ticket) => {
         if (!ticket.createdAt) return false;
-        const ticketDay = new Date(ticket.createdAt).toLocaleDateString("en-US", {
-          weekday: "short",
-        });
+
+        const ticketDay = new Date(ticket.createdAt).toLocaleDateString(
+          "en-US",
+          {
+            weekday: "short",
+          }
+        );
+
         return ticketDay === day;
       }).length,
     })
@@ -261,14 +256,6 @@ function Dashboard() {
               <span>New Ticket</span>
             </Link>
           )}
-
-          <button
-            onClick={logout}
-            className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Logout</span>
-          </button>
         </div>
       </div>
 
