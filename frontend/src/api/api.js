@@ -15,6 +15,13 @@ api.interceptors.request.use((config) => {
 });
 
 // =====================
+// AUTH
+// =====================
+
+export const resetPassword = (data) =>
+  api.post("/auth/reset-password", data);
+
+// =====================
 // TICKETS
 // =====================
 
@@ -84,8 +91,7 @@ export const getAgents = () => api.get("/users/agents");
 // NOTIFICATIONS
 // =====================
 
-export const getNotifications = () =>
-  api.get("/Notifications");
+export const getNotifications = () => api.get("/Notifications");
 
 export const getArchivedNotifications = () =>
   api.get("/Notifications/archived");
@@ -109,8 +115,7 @@ export const unarchiveNotification = (id) =>
 // REPORTS
 // =====================
 
-export const getReportSummary = () =>
-  api.get("/reports/summary");
+export const getReportSummary = () => api.get("/reports/summary");
 
 export const getTicketsByPriority = () =>
   api.get("/reports/tickets-by-priority");
@@ -155,3 +160,25 @@ export const getTroubleshootingSuggestions = (data) =>
 
 export const askAiChatbot = (data) =>
   api.post("/ai/chatbot", data);
+
+// =====================
+// USERS
+// =====================
+
+export const getUsers = () => api.get("/users");
+
+export const getUserById = (id) => api.get(`/users/${id}`);
+
+export const createUser = (user) => api.post("/users", user);
+
+export const updateUser = (id, user) =>
+  api.put(`/users/${id}`, user);
+
+export const updateUserProfile = (id, data) =>
+  api.put(`/users/${id}/profile`, data);
+
+export const changeUserPassword = (id, data) =>
+  api.put(`/users/${id}/change-password`, data);
+
+export const deleteUser = (id) =>
+  api.delete(`/users/${id}`);

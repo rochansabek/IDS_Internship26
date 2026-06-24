@@ -1,17 +1,18 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Ticket,
   Users,
-  Settings,
   X,
   User,
   BarChart3,
   Bot,
+  LogOut,
 } from "lucide-react";
 
 function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const role = localStorage.getItem("ids_role") || "Employee";
   const name = localStorage.getItem("ids_name") || "User";
@@ -25,6 +26,14 @@ function Sidebar({ isOpen, onClose }) {
         ? "bg-white/15 text-white"
         : "text-white/80 hover:bg-white/10 hover:text-white")
     );
+  }
+
+  function logout() {
+    localStorage.removeItem("ids_token");
+    localStorage.removeItem("ids_role");
+    localStorage.removeItem("ids_name");
+    onClose();
+    navigate("/login");
   }
 
   return (
@@ -54,20 +63,12 @@ function Sidebar({ isOpen, onClose }) {
         </div>
 
         <nav className="flex flex-col gap-2 flex-1">
-          <Link
-            to="/dashboard"
-            onClick={onClose}
-            className={linkClass("/dashboard")}
-          >
+          <Link to="/dashboard" onClick={onClose} className={linkClass("/dashboard")}>
             <LayoutDashboard className="w-5 h-5" />
             Dashboard
           </Link>
 
-          <Link
-            to="/reports"
-            onClick={onClose}
-            className={linkClass("/reports")}
-          >
+          <Link to="/reports" onClick={onClose} className={linkClass("/reports")}>
             <BarChart3 className="w-5 h-5" />
             Reports
           </Link>
@@ -82,71 +83,28 @@ function Sidebar({ isOpen, onClose }) {
           </Link>
 
           {role === "Employee" && (
-            <Link
-              to="/tickets"
-              onClick={onClose}
-              className={linkClass("/tickets")}
-            >
+            <Link to="/tickets" onClick={onClose} className={linkClass("/tickets")}>
               <Ticket className="w-5 h-5" />
               My Tickets
             </Link>
           )}
 
-          {(role === "Agent" || role === "SupportAgent") && (
-            <>
-              <Link
-                to="/tickets"
-                onClick={onClose}
-                className={linkClass("/tickets")}
-              >
-                <Ticket className="w-5 h-5" />
-                Assigned Tickets
-              </Link>
-
-              <Link
-                to="/tickets"
-                onClick={onClose}
-                className={linkClass("/tickets")}
-              >
-                <Ticket className="w-5 h-5" />
-                All Tickets
-              </Link>
-            </>
-          )}
-
           {role === "Admin" && (
             <>
-              <Link
-                to="/tickets"
-                onClick={onClose}
-                className={linkClass("/tickets")}
-              >
+              <Link to="/tickets" onClick={onClose} className={linkClass("/tickets")}>
                 <Ticket className="w-5 h-5" />
                 All Tickets
               </Link>
 
-              <Link
-                to="/users"
-                onClick={onClose}
-                className={linkClass("/users")}
-              >
+              <Link to="/users" onClick={onClose} className={linkClass("/users")}>
                 <Users className="w-5 h-5" />
                 Manage Users
-              </Link>
-
-              <Link
-                to="/settings"
-                onClick={onClose}
-                className={linkClass("/settings")}
-              >
-                <Settings className="w-5 h-5" />
-                Settings
               </Link>
             </>
           )}
         </nav>
 
-        <div className="border-t border-white/15 pt-4">
+        <div className="border-t border-white/15 pt-4 space-y-3">
           <Link
             to="/profile"
             onClick={onClose}
@@ -161,6 +119,14 @@ function Sidebar({ isOpen, onClose }) {
               <p className="text-sm text-white/70">{role}</p>
             </div>
           </Link>
+
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+            Logout
+          </button>
         </div>
       </aside>
     </>

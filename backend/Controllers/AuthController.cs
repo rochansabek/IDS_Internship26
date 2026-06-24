@@ -68,11 +68,44 @@ namespace backend.Controllers
 
             return Ok(new
             {
+                id = user.Id,
                 token = token,
                 role = user.Role,
                 fullName = user.FullName,
                 email = user.Email
             });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordDto request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+            {
+                return BadRequest("Email is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.NewPassword))
+            {
+                return BadRequest("New password is required.");
+            }
+
+            if (request.NewPassword.Length < 6)
+            {
+                return BadRequest("Password must be at least 6 characters.");
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+
+            if (user == null)
+            {
+                return NotFound("No account found with this email.");
+            }
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Password reset successfully." });
         }
 
         private string CreateToken(AppUser user)

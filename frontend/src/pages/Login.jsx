@@ -25,6 +25,9 @@ function Login() {
 
       localStorage.setItem("ids_token", response.data.token);
       localStorage.setItem("ids_role", response.data.role || "Employee");
+      localStorage.setItem("ids_userId", response.data.id);
+      localStorage.setItem("ids_name", response.data.fullName || "User");
+      localStorage.setItem("ids_email", response.data.email || "");
 
       navigate("/dashboard");
     } catch (err) {
@@ -40,7 +43,9 @@ function Login() {
             <Ticket className="w-8 h-8 text-primary-foreground" />
           </div>
           <h1 className="text-3xl font-semibold mb-2">Welcome Back</h1>
-          <p className="text-muted-foreground">Sign in to your HelpDesk account</p>
+          <p className="text-muted-foreground">
+            Sign in to your HelpDesk account
+          </p>
         </div>
 
         <div className="bg-card border border-border rounded-2xl shadow-sm p-8">
@@ -97,7 +102,10 @@ function Login() {
                 <span className="text-sm">Remember me</span>
               </label>
 
-              <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-primary hover:underline"
+              >
                 Forgot password?
               </Link>
             </div>
