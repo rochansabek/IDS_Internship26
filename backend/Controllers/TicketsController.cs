@@ -38,22 +38,64 @@ public class TicketsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<Ticket>>> GetTickets()
+    public async Task<ActionResult<List<object>>> GetTickets()
     {
-        return await _context.Tickets.ToListAsync();
+        var tickets = await _context.Tickets
+            .Include(t => t.Requester)
+            .Include(t => t.AssignedAgent)
+            .OrderByDescending(t => t.CreatedAt)
+            .Select(t => new
+            {
+                t.Id,
+                t.Title,
+                t.Description,
+                t.Status,
+                t.Priority,
+                t.Category,
+                t.RequesterId,
+                RequesterName = t.Requester != null ? t.Requester.FullName : "Unknown User",
+                RequesterEmail = t.Requester != null ? t.Requester.Email : "No email available",
+                t.AssignedAgentId,
+                AssignedAgentName = t.AssignedAgent != null ? t.AssignedAgent.FullName : null,
+                AssignedAgentEmail = t.AssignedAgent != null ? t.AssignedAgent.Email : null,
+                t.CreatedAt,
+                t.UpdatedAt
+            })
+            .ToListAsync();
+
+        return Ok(tickets);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Ticket>> GetTicket(int id)
+    public async Task<ActionResult<object>> GetTicket(int id)
     {
-        Ticket? ticket = await _context.Tickets.FindAsync(id);
+        var ticket = await _context.Tickets
+            .Include(t => t.Requester)
+            .Include(t => t.AssignedAgent)
+            .FirstOrDefaultAsync(t => t.Id == id);
 
         if (ticket == null)
         {
             return NotFound();
         }
 
-        return ticket;
+        return Ok(new
+        {
+            ticket.Id,
+            ticket.Title,
+            ticket.Description,
+            ticket.Status,
+            ticket.Priority,
+            ticket.Category,
+            ticket.RequesterId,
+            RequesterName = ticket.Requester != null ? ticket.Requester.FullName : "Unknown User",
+            RequesterEmail = ticket.Requester != null ? ticket.Requester.Email : "No email available",
+            ticket.AssignedAgentId,
+            AssignedAgentName = ticket.AssignedAgent != null ? ticket.AssignedAgent.FullName : null,
+            AssignedAgentEmail = ticket.AssignedAgent != null ? ticket.AssignedAgent.Email : null,
+            ticket.CreatedAt,
+            ticket.UpdatedAt
+        });
     }
 
     [HttpPost]
@@ -64,13 +106,18 @@ public class TicketsController : ControllerBase
         ticket.CreatedAt = DateTime.UtcNow;
         ticket.UpdatedAt = DateTime.UtcNow;
 
+        if (ticket.RequesterId == 0)
+        {
+            ticket.RequesterId = null;
+        }
+
         _context.Tickets.Add(ticket);
         await _context.SaveChangesAsync();
 
         _context.TicketActivities.Add(new TicketActivity
         {
             TicketId = ticket.Id,
-            UserId = 0,
+            UserId = ticket.RequesterId ?? 0,
             Action = "Ticket Created",
             NewValue = ticket.Title,
             CreatedAt = DateTime.UtcNow
@@ -108,17 +155,14 @@ public class TicketsController : ControllerBase
         _context.TicketActivities.Add(new TicketActivity
         {
             TicketId = ticket.Id,
-            UserId = 0,
+            UserId = updatedTicket.RequesterId ?? 0,
             Action = "Ticket Updated",
             CreatedAt = DateTime.UtcNow
         });
 
         await _context.SaveChangesAsync();
 
-        await CreateNotification(
-            ticket.Id,
-            $"Ticket TKT-{ticket.Id} was updated."
-        );
+        await CreateNotification(ticket.Id, $"Ticket TKT-{ticket.Id} was updated.");
 
         return NoContent();
     }
@@ -136,17 +180,14 @@ public class TicketsController : ControllerBase
         _context.TicketActivities.Add(new TicketActivity
         {
             TicketId = ticket.Id,
-            UserId = 0,
+            UserId = ticket.RequesterId ?? 0,
             Action = "Ticket Deleted",
             CreatedAt = DateTime.UtcNow
         });
 
         await _context.SaveChangesAsync();
 
-        await CreateNotification(
-            ticket.Id,
-            $"Ticket TKT-{ticket.Id} was deleted."
-        );
+        await CreateNotification(ticket.Id, $"Ticket TKT-{ticket.Id} was deleted.");
 
         _context.Tickets.Remove(ticket);
         await _context.SaveChangesAsync();
@@ -161,7 +202,14 @@ public class TicketsController : ControllerBase
 
         if (ticket == null)
         {
-            return NotFound();
+            return NotFound("Ticket not found.");
+        }
+
+        AppUser? user = await _context.Users.FindAsync(agentId);
+
+        if (user == null)
+        {
+            return BadRequest("User/employee ID does not exist.");
         }
 
         ticket.AssignedAgentId = agentId;
@@ -175,7 +223,7 @@ public class TicketsController : ControllerBase
             TicketId = ticket.Id,
             UserId = agentId,
             Action = "Ticket Assigned",
-            NewValue = $"Assigned to Agent {agentId}",
+            NewValue = $"Assigned to {user.FullName}",
             CreatedAt = DateTime.UtcNow
         });
 
@@ -183,7 +231,7 @@ public class TicketsController : ControllerBase
 
         await CreateNotification(
             ticket.Id,
-            $"Ticket TKT-{ticket.Id} was assigned to Agent {agentId}."
+            $"Ticket TKT-{ticket.Id} was assigned to {user.FullName}."
         );
 
         return Ok(ticket);
@@ -209,7 +257,7 @@ public class TicketsController : ControllerBase
         _context.TicketActivities.Add(new TicketActivity
         {
             TicketId = ticket.Id,
-            UserId = 0,
+            UserId = ticket.RequesterId ?? 0,
             Action = "Status Updated",
             OldValue = oldStatus,
             NewValue = status,
@@ -241,7 +289,6 @@ public class TicketsController : ControllerBase
         comment.CreatedAt = DateTime.UtcNow;
 
         _context.TicketComments.Add(comment);
-
         await _context.SaveChangesAsync();
 
         _context.TicketActivities.Add(new TicketActivity
@@ -254,10 +301,7 @@ public class TicketsController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        await CreateNotification(
-            id,
-            $"New comment added on Ticket TKT-{id}."
-        );
+        await CreateNotification(id, $"New comment added on Ticket TKT-{id}.");
 
         return Ok(comment);
     }
