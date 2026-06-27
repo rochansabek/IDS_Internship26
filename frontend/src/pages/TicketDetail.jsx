@@ -32,8 +32,7 @@ import {
 const statuses = ["Open", "Assigned", "In Progress", "Resolved", "Closed"];
 
 const getPriorityColor = (priority) => {
-  if (priority === "Critical")
-    return "bg-destructive text-destructive-foreground";
+  if (priority === "Critical") return "bg-destructive text-destructive-foreground";
   if (priority === "High") return "bg-chart-4 text-white";
   if (priority === "Medium") return "bg-chart-1 text-white";
   if (priority === "Low") return "bg-chart-2 text-white";
@@ -42,14 +41,10 @@ const getPriorityColor = (priority) => {
 
 const getStatusColor = (status) => {
   if (status === "Open") return "bg-chart-1/10 text-chart-1 border-chart-1/20";
-  if (status === "Assigned")
-    return "bg-primary/10 text-primary border-primary/20";
-  if (status === "In Progress")
-    return "bg-chart-4/10 text-chart-4 border-chart-4/20";
-  if (status === "Resolved")
-    return "bg-chart-2/10 text-chart-2 border-chart-2/20";
-  if (status === "Closed")
-    return "bg-muted text-muted-foreground border-border";
+  if (status === "Assigned") return "bg-primary/10 text-primary border-primary/20";
+  if (status === "In Progress") return "bg-chart-4/10 text-chart-4 border-chart-4/20";
+  if (status === "Resolved") return "bg-chart-2/10 text-chart-2 border-chart-2/20";
+  if (status === "Closed") return "bg-muted text-muted-foreground border-border";
   return "bg-muted text-muted-foreground border-border";
 };
 
@@ -183,6 +178,7 @@ export default function TicketDetail() {
       await loadTicketData();
     } catch (error) {
       console.error("Failed to assign ticket", error);
+      alert("Could not assign ticket. Make sure the employee ID exists.");
     }
   };
 
@@ -191,7 +187,7 @@ export default function TicketDetail() {
 
     try {
       await addTicketComment(id, {
-        userId: 0,
+        userId: Number(localStorage.getItem("ids_userId")) || 0,
         message: newComment,
         isInternalNote: isInternalNote,
       });
@@ -274,9 +270,7 @@ export default function TicketDetail() {
       id: "comment-" + comment.id,
       type: "comment",
       user: "User " + comment.userId,
-      action: comment.isInternalNote
-        ? "added an internal note"
-        : "added a comment",
+      action: comment.isInternalNote ? "added an internal note" : "added a comment",
       comment: comment.message,
       time: formatDate(comment.createdAt),
       rawTime: comment.createdAt,
@@ -353,10 +347,7 @@ export default function TicketDetail() {
                   {selectedFiles.length > 0 && (
                     <div className="mt-2 space-y-1">
                       {selectedFiles.map((file, index) => (
-                        <p
-                          key={index}
-                          className="text-xs text-muted-foreground"
-                        >
+                        <p key={index} className="text-xs text-muted-foreground">
                           Selected: {file.name}
                         </p>
                       ))}
@@ -517,8 +508,7 @@ export default function TicketDetail() {
             </div>
 
             <p className="text-sm text-muted-foreground">
-              Generate a summary and troubleshooting suggestions for this
-              ticket.
+              Generate a summary and troubleshooting suggestions for this ticket.
             </p>
 
             <button
@@ -605,12 +595,12 @@ export default function TicketDetail() {
                 Close Ticket
               </button>
 
-              {(role === "Admin" || role === "SupportAgent") && (
+              {role === "Admin" && (
                 <div className="pt-4 border-t border-border space-y-2">
                   <input
                     value={agentId}
                     onChange={(e) => setAgentId(e.target.value)}
-                    placeholder="Agent ID"
+                    placeholder="Employee ID"
                     className="w-full px-4 py-2 bg-accent border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
 
@@ -745,13 +735,11 @@ export default function TicketDetail() {
 
                   <div>
                     <div className="font-medium">
-                      {ticket.assignedAgentId
-                        ? "Agent " + ticket.assignedAgentId
-                        : "Unassigned"}
+                      {ticket.assignedAgentName || "Unassigned"}
                     </div>
 
                     <div className="text-sm text-muted-foreground">
-                      Support Agent
+                      {ticket.assignedAgentEmail || "No assigned employee"}
                     </div>
                   </div>
                 </div>
@@ -765,35 +753,13 @@ export default function TicketDetail() {
                     Last Updated
                   </div>
 
-                  <div className="font-medium">
-                    {formatDate(ticket.updatedAt)}
-                  </div>
+                  <div className="font-medium">{formatDate(ticket.updatedAt)}</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-xl p-6">
-            <h3 className="font-semibold mb-4">Customer Information</h3>
-
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
-                U
-              </div>
-
-              <div>
-                <div className="font-medium">User {ticket.id}</div>
-
-                <div className="text-sm text-muted-foreground">
-                  requester@company.com
-                </div>
-              </div>
-            </div>
-
-            <button className="w-full px-4 py-2 bg-accent text-foreground rounded-lg hover:bg-accent/80 transition-colors">
-              View Profile
-            </button>
-          </div>
+        
         </div>
       </div>
     </div>

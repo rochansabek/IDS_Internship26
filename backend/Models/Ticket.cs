@@ -16,10 +16,16 @@ namespace backend.Models
 
         public string Category { get; set; } = string.Empty;
 
+        public int? RequesterId { get; set; }
+
+        public AppUser? Requester { get; set; }
+
         public int? AssignedAgentId { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public AppUser? AssignedAgent { get; set; }
 
-        public DateTime UpdatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 }
